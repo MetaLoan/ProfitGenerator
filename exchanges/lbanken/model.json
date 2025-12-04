@@ -1,0 +1,132 @@
+{
+  "width": 750,
+  "height": 1240,
+  "customFontUrls": [],
+  "layers": [
+    {
+      "id": "L8x8ikdz",
+      "text": "新文字",
+      "x": 52,
+      "y": 231,
+      "fontFamily": "HarmonyOS Sans SC",
+      "fontSize": 14,
+      "color": "#ffffff",
+      "fontWeight": 400,
+      "letterSpacing": 0,
+      "lineHeight": 1.2,
+      "children": [
+        {
+          "text": "{{tradepair}} Perp",
+          "fontSize": 26,
+          "fontWeight": 400
+        },
+        {
+          "text": "|",
+          "gap": 21,
+          "color": "#36393F",
+          "fontSize": 27,
+          "fontWeight": 100
+        },
+        {
+          "text": "{{direction}}",
+          "gap": 21,
+          "fontSize": 26,
+          "fontWeight": 400,
+          "dynamicColor": true
+        },
+        {
+          "text": "|",
+          "gap": 23,
+          "color": "#36393F",
+          "fontSize": 27,
+          "fontWeight": 100
+        },
+        {
+          "text": "{{lev}}x",
+          "gap": 22,
+          "fontSize": 26
+        }
+      ]
+    },
+    {
+      "id": "Lpxqskdf",
+      "text": "2025/06/25 00:29:45",
+      "x": 479,
+      "y": 67,
+      "fontFamily": "HarmonyOS Sans SC",
+      "fontSize": 22,
+      "color": "#90959E",
+      "fontWeight": 400,
+      "letterSpacing": 0.4,
+      "lineHeight": 1.2
+    },
+    {
+      "id": "Lpk1mp1y",
+      "text": "+{{yield}}",
+      "x": 52,
+      "y": 363,
+      "fontFamily": "HarmonyOS Sans SC",
+      "fontSize": 64,
+      "color": "#279E55",
+      "fontWeight": 700,
+      "letterSpacing": 0,
+      "lineHeight": 1.2
+    },
+    {
+      "id": "Lbddqvll",
+      "text": "{{entprice}}",
+      "x": 53,
+      "y": 513,
+      "fontFamily": "HarmonyOS Sans SC",
+      "fontSize": 25,
+      "color": "#ffffff",
+      "fontWeight": 400,
+      "letterSpacing": 0.7,
+      "lineHeight": 1.2
+    },
+    {
+      "id": "L0l7ylfu",
+      "text": "{{lastprice}}",
+      "x": 53,
+      "y": 617,
+      "fontFamily": "HarmonyOS Sans SC",
+      "fontSize": 25,
+      "color": "#ffffff",
+      "fontWeight": 400,
+      "letterSpacing": 0.7,
+      "lineHeight": 1.2
+    },
+    {
+      "id": "Lqrcode1",
+      "type": "qrcode",
+      "x": 608,
+      "y": 1083,
+      "width": 114,
+      "height": 114
+    },
+    {
+      "id": "Lx3l0xzm",
+      "text": "Referral Code {{ref}}",
+      "x": 41,
+      "y": 1099,
+      "fontFamily": "HarmonyOS Sans SC",
+      "fontSize": 31,
+      "color": "#ffffff",
+      "fontWeight": 400,
+      "letterSpacing": 0.6,
+      "lineHeight": 1.2
+    },
+    {
+      "id": "Lm0ffrx6",
+      "text": "Sign Up to Take Your Cut of $2M",
+      "x": 40,
+      "y": 1152,
+      "fontFamily": "HarmonyOS Sans SC",
+      "fontSize": 28,
+      "color": "#9095A0",
+      "fontWeight": 400,
+      "letterSpacing": 0,
+      "lineHeight": 1.2
+    }
+  ]
+}

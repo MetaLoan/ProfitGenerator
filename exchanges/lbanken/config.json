@@ -1,0 +1,42 @@
+{
+  "name": "LBanken",
+  "displayName": "LBanken 交易所",
+  "description": "LBanken 交易所晒单收益图模板",
+  "version": "1.0.0",
+  "priceSource": "binance",
+  "supportedPairs": [
+    "ETHUSDT",
+    "BTCUSDT"
+  ],
+  "defaultPair": "ETHUSDT",
+  "template": {
+    "width": 750,
+    "height": 1240,
+    "backgroundPattern": "{pair}-background.jpg"
+  },
+  "styling": {
+    "profitColor": "#279E55",
+    "lossColor": "#FF6B6B",
+    "textShadow": "none"
+  },
+  "displayTexts": {
+    "direction": {
+      "long": "Close Long",
+      "short": "Close Short"
+    },
+    "leverage": "{lev}x",
+    "yield": "{value}%",
+    "dateFormat": "YYYY/MM/DD HH:mm:ss"
+  },
+  "dynamicColors": {
+    "direction": {
+      "long": "#FF6B6B",
+      "short": "#279E55"
+    }
+  },
+  "qrcode": {
+    "baseUrl": "https://lbank.com/ref/",
+    "defaultRefCode": "5NCXS"
+  }
+}
+

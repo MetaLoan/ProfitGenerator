@@ -1,0 +1,81 @@
+{
+    "width": 908,
+    "height": 1280,
+    "customFontUrls": [
+      "https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@100..900"
+    ],
+    "layers": [
+      {
+        "id": "Lsqe4kyf",
+        "text": "{{date}}",
+        "x": 609,
+        "y": 50,
+        "fontFamily": "Noto Sans SC",
+        "fontSize": 32,
+        "color": "#6F6F6D",
+        "fontWeight": 263,
+        "letterSpacing": 1,
+        "lineHeight": 1.2
+      },
+      {
+        "id": "Lsnkzzjp",
+        "text": "{{yield}}",
+        "x": 45,
+        "y": 280,
+        "fontFamily": "Noto Sans SC",
+        "fontSize": 108,
+        "color": "#21C07C",
+        "fontWeight": 462,
+        "letterSpacing": 3.5,
+        "lineHeight": 1.2
+      },
+      {
+        "id": "Lkkb51qk",
+        "text": "{{entprice}}",
+        "x": 224,
+        "y": 642,
+        "fontFamily": "Noto Sans SC",
+        "fontSize": 30,
+        "color": "#ffffff",
+        "fontWeight": 381,
+        "letterSpacing": 1,
+        "lineHeight": 1.2
+      },
+      {
+        "id": "Lsom648v",
+        "text": "{{lastprice}}",
+        "x": 224,
+        "y": 698,
+        "fontFamily": "Noto Sans SC",
+        "fontSize": 30,
+        "color": "#ffffff",
+        "fontWeight": 400,
+        "letterSpacing": 1,
+        "lineHeight": 1.2
+      },
+      {
+        "id": "L7d36z1g",
+        "text": "{{lev}}x",
+        "x": 243,
+        "y": 539,
+        "fontFamily": "Noto Sans SC",
+        "fontSize": 27,
+        "color": "#E8E6E5",
+        "fontWeight": 279,
+        "letterSpacing": 1,
+        "lineHeight": 1.2
+      },
+      {
+        "id": "Ls91boaq",
+        "text": "{{direction}}",
+        "x": 139,
+        "y": 538,
+        "fontFamily": "Noto Sans SC",
+        "fontSize": 27,
+        "color": "#E8E6E5",
+        "fontWeight": 279,
+        "letterSpacing": 0,
+        "lineHeight": 1.2
+      }
+    ]
+  }

@@ -1,0 +1,1075 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>晒单图 API 测试工具</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-primary: #0a0a0f;
+      --bg-secondary: #12121a;
+      --bg-tertiary: #1a1a24;
+      --border-color: #2a2a3a;
+      --text-primary: #e8e8ec;
+      --text-secondary: #8888a0;
+      --accent-green: #10b981;
+      --accent-red: #ef4444;
+      --accent-blue: #3b82f6;
+      --accent-purple: #8b5cf6;
+    }
+    
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    
+    body {
+      font-family: 'Noto Sans SC', -apple-system, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+      line-height: 1.6;
+    }
+    
+    .app {
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      min-height: 100vh;
+    }
+    
+    /* 左侧参数面板 */
+    .params-panel {
+      background: var(--bg-secondary);
+      border-right: 1px solid var(--border-color);
+      padding: 24px;
+      overflow-y: auto;
+      max-height: 100vh;
+    }
+    
+    .panel-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 24px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border-color);
+    }
+    
+    .panel-header h1 {
+      font-size: 18px;
+      font-weight: 600;
+      background: linear-gradient(135deg, var(--accent-green), var(--accent-blue));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    
+    .panel-header .badge {
+      font-size: 11px;
+      padding: 2px 8px;
+      background: var(--accent-purple);
+      border-radius: 4px;
+      color: #fff;
+    }
+    
+    /* 服务器配置 */
+    .server-config {
+      background: var(--bg-tertiary);
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 20px;
+    }
+    
+    .server-config label {
+      font-size: 11px;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    .server-config input {
+      width: 100%;
+      margin-top: 6px;
+      padding: 8px 12px;
+      background: var(--bg-primary);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      color: var(--text-primary);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+    }
+    
+    /* 参数分组 */
+    .param-group {
+      margin-bottom: 20px;
+    }
+    
+    .param-group-title {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .param-group-title::before {
+      content: '';
+      width: 3px;
+      height: 14px;
+      background: var(--accent-blue);
+      border-radius: 2px;
+    }
+    
+    .param-row {
+      margin-bottom: 12px;
+    }
+    
+    .param-row label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      margin-bottom: 4px;
+      color: var(--text-primary);
+    }
+    
+    .param-row label .required {
+      color: var(--accent-red);
+      font-size: 10px;
+    }
+    
+    .param-row label .optional {
+      color: var(--text-secondary);
+      font-size: 10px;
+    }
+    
+    .param-row input,
+    .param-row select {
+      width: 100%;
+      padding: 10px 12px;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      color: var(--text-primary);
+      font-size: 13px;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    
+    .param-row input:focus,
+    .param-row select:focus {
+      outline: none;
+      border-color: var(--accent-blue);
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+    
+    .param-row input::placeholder {
+      color: var(--text-secondary);
+    }
+    
+    .param-hint {
+      font-size: 11px;
+      color: var(--text-secondary);
+      margin-top: 4px;
+    }
+    
+    /* 双列布局 */
+    .param-row-double {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    
+    /* 开关样式 */
+    .switch-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 0;
+    }
+    
+    .switch-row label {
+      margin-bottom: 0;
+    }
+    
+    .switch {
+      position: relative;
+      width: 44px;
+      height: 24px;
+    }
+    
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    
+    .switch-slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      transition: 0.3s;
+    }
+    
+    .switch-slider::before {
+      position: absolute;
+      content: '';
+      height: 18px;
+      width: 18px;
+      left: 2px;
+      bottom: 2px;
+      background: var(--text-secondary);
+      border-radius: 50%;
+      transition: 0.3s;
+    }
+    
+    .switch input:checked + .switch-slider {
+      background: var(--accent-green);
+      border-color: var(--accent-green);
+    }
+    
+    .switch input:checked + .switch-slider::before {
+      transform: translateX(20px);
+      background: #fff;
+    }
+    
+    /* 按钮 */
+    .btn-generate {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, var(--accent-green), #059669);
+      border: none;
+      border-radius: 8px;
+      color: #fff;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: transform 0.2s, box-shadow 0.2s;
+      margin-top: 20px;
+    }
+    
+    .btn-generate:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 20px rgba(16, 185, 129, 0.3);
+    }
+    
+    .btn-generate:active {
+      transform: translateY(0);
+    }
+    
+    .btn-generate:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+    
+    .btn-generate .spinner {
+      width: 18px;
+      height: 18px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    
+    /* 右侧结果面板 */
+    .result-panel {
+      display: flex;
+      flex-direction: column;
+      background: var(--bg-primary);
+      overflow: hidden;
+    }
+    
+    .result-header {
+      padding: 16px 24px;
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    
+    .result-tabs {
+      display: flex;
+      gap: 4px;
+    }
+    
+    .result-tab {
+      padding: 8px 16px;
+      background: transparent;
+      border: none;
+      border-radius: 6px;
+      color: var(--text-secondary);
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .result-tab.active {
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+    }
+    
+    .result-tab:hover:not(.active) {
+      color: var(--text-primary);
+    }
+    
+    .result-actions {
+      display: flex;
+      gap: 8px;
+    }
+    
+    .btn-action {
+      padding: 8px 12px;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      color: var(--text-primary);
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .btn-action:hover {
+      background: var(--border-color);
+    }
+    
+    .result-content {
+      flex: 1;
+      overflow: auto;
+      padding: 24px;
+    }
+    
+    /* 图片预览 */
+    .image-preview {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 400px;
+    }
+    
+    .image-preview.empty {
+      color: var(--text-secondary);
+    }
+    
+    .image-preview .placeholder {
+      text-align: center;
+    }
+    
+    .image-preview .placeholder-icon {
+      font-size: 48px;
+      margin-bottom: 16px;
+      opacity: 0.5;
+    }
+    
+    .preview-image {
+      max-width: 100%;
+      max-height: calc(100vh - 200px);
+      border-radius: 8px;
+      box-shadow: 0 4px 30px rgba(0,0,0,0.5);
+    }
+    
+    .image-info {
+      margin-top: 16px;
+      padding: 12px 16px;
+      background: var(--bg-secondary);
+      border-radius: 8px;
+      font-size: 12px;
+      color: var(--text-secondary);
+      display: flex;
+      gap: 20px;
+    }
+    
+    .image-info span {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    
+    /* JSON 预览 */
+    .json-preview {
+      display: none;
+    }
+    
+    .json-preview.active {
+      display: block;
+    }
+    
+    .json-content {
+      background: var(--bg-secondary);
+      border-radius: 8px;
+      padding: 16px;
+      overflow: auto;
+      max-height: calc(100vh - 200px);
+    }
+    
+    .json-content pre {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+    
+    /* 状态信息 */
+    .status-bar {
+      padding: 12px 24px;
+      background: var(--bg-secondary);
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+    
+    .status-bar .status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--text-secondary);
+    }
+    
+    .status-dot.success {
+      background: var(--accent-green);
+    }
+    
+    .status-dot.error {
+      background: var(--accent-red);
+    }
+    
+    .status-dot.loading {
+      background: var(--accent-blue);
+      animation: pulse 1s infinite;
+    }
+    
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+    
+    /* 错误提示 */
+    .error-message {
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid var(--accent-red);
+      border-radius: 8px;
+      padding: 16px;
+      color: var(--accent-red);
+    }
+    
+    .error-message h3 {
+      font-size: 14px;
+      margin-bottom: 8px;
+    }
+    
+    .error-message p {
+      font-size: 13px;
+      opacity: 0.9;
+    }
+    
+    /* 成功消息 */
+    .success-message {
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid var(--accent-green);
+      border-radius: 8px;
+      padding: 12px 16px;
+      color: var(--accent-green);
+      font-size: 13px;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    /* 快捷填充 */
+    .quick-fill {
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border-color);
+    }
+    
+    .quick-fill-title {
+      font-size: 11px;
+      color: var(--text-secondary);
+      margin-bottom: 8px;
+    }
+    
+    .quick-fill-btns {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    
+    .btn-quick {
+      padding: 6px 10px;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      color: var(--text-secondary);
+      font-size: 11px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .btn-quick:hover {
+      background: var(--border-color);
+      color: var(--text-primary);
+    }
+    
+    /* 响应式 */
+    @media (max-width: 900px) {
+      .app {
+        grid-template-columns: 1fr;
+      }
+      
+      .params-panel {
+        max-height: none;
+        border-right: none;
+        border-bottom: 1px solid var(--border-color);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <!-- 左侧参数面板 -->
+    <div class="params-panel">
+      <div class="panel-header">
+        <h1>🚀 晒单图 API 测试</h1>
+        <span class="badge">v2.0</span>
+      </div>
+      
+      <!-- 服务器配置 -->
+      <div class="server-config">
+        <label>API 服务器地址</label>
+        <input type="text" id="serverUrl" value="http://localhost:3070" placeholder="http://localhost:3070">
+      </div>
+      
+      <!-- 基础参数 -->
+      <div class="param-group">
+        <div class="param-group-title">基础参数</div>
+        
+        <div class="param-row">
+          <label>交易所 <span class="optional">可选</span></label>
+          <input type="text" id="ex" value="easicoin" placeholder="easicoin">
+        </div>
+        
+        <div class="param-row">
+          <label>交易对 <span class="required">必填</span></label>
+          <input type="text" id="tradepair" value="ETHUSDT" placeholder="ETHUSDT">
+        </div>
+        
+        <div class="param-row-double">
+          <div class="param-row">
+            <label>开仓时间 <span class="required">必填</span></label>
+            <input type="text" id="opendate" placeholder="2025-12-01 10:00">
+          </div>
+          <div class="param-row">
+            <label>显示时间 <span class="required">必填</span></label>
+            <input type="text" id="date" placeholder="2025-12-03 18:00">
+          </div>
+        </div>
+        <div class="param-hint">格式: YYYY-MM-DD HH:mm</div>
+      </div>
+      
+      <!-- 交易参数 -->
+      <div class="param-group">
+        <div class="param-group-title">交易参数</div>
+        
+        <div class="param-row-double">
+          <div class="param-row">
+            <label>方向</label>
+            <select id="direction">
+              <option value="long">做多 (Long)</option>
+              <option value="short">做空 (Short)</option>
+            </select>
+          </div>
+          <div class="param-row">
+            <label>杠杆倍数</label>
+            <input type="number" id="lev" value="50" min="1" max="500" placeholder="50">
+          </div>
+        </div>
+        
+        <div class="param-row">
+          <label>方向动作 <span class="optional">可选</span></label>
+          <select id="direction_action">
+            <option value="">无（默认）</option>
+            <option value="open">开仓 (Open)</option>
+            <option value="close">平仓 (Close)</option>
+          </select>
+          <div class="param-hint">用于显示 "开多/平空" 等文案</div>
+        </div>
+      </div>
+      
+      <!-- 高级选项 -->
+      <div class="param-group">
+        <div class="param-group-title">高级选项</div>
+        
+        <div class="param-row">
+          <label>时区 <span class="optional">可选</span></label>
+          <select id="timezone">
+            <option value="+8">UTC+8 北京/香港</option>
+            <option value="+9">UTC+9 东京/首尔</option>
+            <option value="+7">UTC+7 曼谷/雅加达</option>
+            <option value="+5.5">UTC+5:30 印度</option>
+            <option value="+3">UTC+3 莫斯科</option>
+            <option value="+1">UTC+1 巴黎/柏林</option>
+            <option value="+0">UTC+0 伦敦</option>
+            <option value="-5">UTC-5 纽约</option>
+            <option value="-8">UTC-8 洛杉矶</option>
+          </select>
+          <div class="param-hint">调整图片上显示的时间所属时区</div>
+        </div>
+        
+        <div class="switch-row">
+          <label>启用动态方向变色</label>
+          <label class="switch">
+            <input type="checkbox" id="dynamic_direction_color">
+            <span class="switch-slider"></span>
+          </label>
+        </div>
+        <div class="param-hint">根据方向自动设置颜色（开多/平空=绿，开空/平多=红）</div>
+      </div>
+      
+      <!-- 二维码参数 -->
+      <div class="param-group">
+        <div class="param-group-title">📱 二维码参数</div>
+        
+        <div class="param-row">
+          <label>邀请码 <span class="optional">可选</span></label>
+          <input type="text" id="refcode" placeholder="留空使用默认值">
+          <div class="param-hint">
+            Easicoin 默认: HAJIMI → https://www.easicoinx.com/account/register/?inviteCode=HAJIMI<br>
+            LBanken 默认: 5NCXS → https://lbank.com/ref/5NCXS
+          </div>
+        </div>
+      </div>
+      
+      <!-- 生成按钮 -->
+      <button class="btn-generate" id="generateBtn" onclick="generateImage()">
+        <span>⚡</span>
+        <span>生成晒单图</span>
+      </button>
+      
+      <!-- 快捷填充 -->
+      <div class="quick-fill">
+        <div class="quick-fill-title">⚡ 快捷填充</div>
+        <div class="quick-fill-btns">
+          <button class="btn-quick" onclick="fillQuick('yesterday')">昨天开仓</button>
+          <button class="btn-quick" onclick="fillQuick('week')">一周前</button>
+          <button class="btn-quick" onclick="fillQuick('month')">一月前</button>
+          <button class="btn-quick" onclick="fillQuick('random')">随机参数</button>
+        </div>
+      </div>
+      
+      <!-- API 参数说明 -->
+      <div class="param-docs" style="margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border-color);">
+        <div class="param-group-title" style="cursor: pointer;" onclick="toggleDocs()">
+          📖 API 参数说明 <span id="docsToggle" style="font-size: 10px; opacity: 0.6;">▼</span>
+        </div>
+        <div id="docsContent" style="display: none; font-size: 11px; line-height: 1.8; color: var(--text-secondary); margin-top: 12px;">
+          <table style="width: 100%; border-collapse: collapse;">
+            <tr style="border-bottom: 1px solid var(--border-color);">
+              <td style="padding: 6px 0; color: var(--accent-blue); font-family: 'JetBrains Mono', monospace;">ex</td>
+              <td style="padding: 6px 0;">交易所ID，默认 <code style="background: var(--bg-tertiary); padding: 1px 4px; border-radius: 3px;">easicoin</code>，可选 <code style="background: var(--bg-tertiary); padding: 1px 4px; border-radius: 3px;">lbanken</code></td>
+            </tr>
+            <tr style="border-bottom: 1px solid var(--border-color);">
+              <td style="padding: 6px 0; color: var(--accent-red); font-family: 'JetBrains Mono', monospace;">tradepair *</td>
+              <td style="padding: 6px 0;">交易对，如 <code style="background: var(--bg-tertiary); padding: 1px 4px; border-radius: 3px;">ETHUSDT</code>、<code style="background: var(--bg-tertiary); padding: 1px 4px; border-radius: 3px;">BTCUSDT</code></td>
+            </tr>
+            <tr style="border-bottom: 1px solid var(--border-color);">
+              <td style="padding: 6px 0; color: var(--accent-red); font-family: 'JetBrains Mono', monospace;">opendate *</td>
+              <td style="padding: 6px 0;">开仓时间，格式 <code style="background: var(--bg-tertiary); padding: 1px 4px; border-radius: 3px;">YYYY-MM-DD HH:mm</code></td>
+            </tr>
+            <tr style="border-bottom: 1px solid var(--border-color);">
+              <td style="padding: 6px 0; color: var(--accent-red); font-family: 'JetBrains Mono', monospace;">date *</td>
+              <td style="padding: 6px 0;">显示时间（用于计算收益），格式同上</td>
+            </tr>
+            <tr style="border-bottom: 1px solid var(--border-color);">
+              <td style="padding: 6px 0; color: var(--accent-blue); font-family: 'JetBrains Mono', monospace;">direction</td>
+              <td style="padding: 6px 0;"><code style="background: var(--bg-tertiary); padding: 1px 4px; border-radius: 3px;">long</code> 做多 | <code style="background: var(--bg-tertiary); padding: 1px 4px; border-radius: 3px;">short</code> 做空</td>
+            </tr>
+            <tr style="border-bottom: 1px solid var(--border-color);">
+              <td style="padding: 6px 0; color: var(--accent-blue); font-family: 'JetBrains Mono', monospace;">lev</td>
+              <td style="padding: 6px 0;">杠杆倍数，默认 <code style="background: var(--bg-tertiary); padding: 1px 4px; border-radius: 3px;">10</code></td>
+            </tr>
+            <tr style="border-bottom: 1px solid var(--border-color);">
+              <td style="padding: 6px 0; color: var(--accent-blue); font-family: 'JetBrains Mono', monospace;">direction_action</td>
+              <td style="padding: 6px 0;"><code style="background: var(--bg-tertiary); padding: 1px 4px; border-radius: 3px;">open</code> 开仓 | <code style="background: var(--bg-tertiary); padding: 1px 4px; border-radius: 3px;">close</code> 平仓</td>
+            </tr>
+            <tr style="border-bottom: 1px solid var(--border-color);">
+              <td style="padding: 6px 0; color: var(--accent-blue); font-family: 'JetBrains Mono', monospace;">timezone</td>
+              <td style="padding: 6px 0;">时区偏移，如 <code style="background: var(--bg-tertiary); padding: 1px 4px; border-radius: 3px;">+8</code>、<code style="background: var(--bg-tertiary); padding: 1px 4px; border-radius: 3px;">-5</code>，默认 +8</td>
+            </tr>
+            <tr style="border-bottom: 1px solid var(--border-color);">
+              <td style="padding: 6px 0; color: var(--accent-purple); font-family: 'JetBrains Mono', monospace;">dynamic_direction_color</td>
+              <td style="padding: 6px 0;"><code style="background: var(--bg-tertiary); padding: 1px 4px; border-radius: 3px;">true</code> 启用方向动态变色</td>
+            </tr>
+            <tr>
+              <td style="padding: 6px 0; color: var(--accent-green); font-family: 'JetBrains Mono', monospace;">refcode</td>
+              <td style="padding: 6px 0;">邀请码，用于生成二维码链接。Easicoin 默认 <code style="background: var(--bg-tertiary); padding: 1px 4px; border-radius: 3px;">HAJIMI</code>，LBanken 默认 <code style="background: var(--bg-tertiary); padding: 1px 4px; border-radius: 3px;">5NCXS</code></td>
+            </tr>
+          </table>
+          
+          <div style="margin-top: 12px; padding: 10px; background: var(--bg-tertiary); border-radius: 6px;">
+            <div style="color: var(--accent-green); margin-bottom: 6px;">🎨 动态变色规则：</div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px;">
+              <span>• 开多 (open_long) → <span style="color: #10b981;">绿色</span></span>
+              <span>• 开空 (open_short) → <span style="color: #ef4444;">红色</span></span>
+              <span>• 平多 (close_long) → <span style="color: #ef4444;">红色</span></span>
+              <span>• 平空 (close_short) → <span style="color: #10b981;">绿色</span></span>
+            </div>
+          </div>
+          
+          <div style="margin-top: 12px; padding: 10px; background: var(--bg-tertiary); border-radius: 6px;">
+            <div style="color: var(--accent-blue); margin-bottom: 6px;">📝 示例请求：</div>
+            <code style="font-size: 10px; word-break: break-all; color: var(--text-secondary);">
+              /api/generate?ex=lbanken&tradepair=ETHUSDT&opendate=2025-12-03 15:00&date=2025-12-04 14:00&direction=long&lev=50&direction_action=open&dynamic_direction_color=true&refcode=MYCODE
+            </code>
+          </div>
+          
+          <div style="margin-top: 12px; padding: 10px; background: var(--bg-tertiary); border-radius: 6px;">
+            <div style="color: var(--accent-green); margin-bottom: 6px;">📱 二维码链接格式：</div>
+            <div style="display: grid; gap: 4px;">
+              <span>• Easicoin: <code style="font-size: 10px; color: var(--text-secondary);">https://www.easicoinx.com/account/register/?inviteCode={refcode}</code></span>
+              <span>• LBanken: <code style="font-size: 10px; color: var(--text-secondary);">https://lbank.com/ref/{refcode}</code></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- 右侧结果面板 -->
+    <div class="result-panel">
+      <div class="result-header">
+        <div class="result-tabs">
+          <button class="result-tab active" onclick="switchTab('image')">🖼️ 图片预览</button>
+          <button class="result-tab" onclick="switchTab('json')">📄 JSON 数据</button>
+        </div>
+        <div class="result-actions">
+          <button class="btn-action" onclick="downloadImage()" id="downloadBtn" style="display:none;">
+            ⬇️ 下载图片
+          </button>
+          <button class="btn-action" onclick="copyJson()" id="copyBtn" style="display:none;">
+            📋 复制 JSON
+          </button>
+        </div>
+      </div>
+      
+      <div class="result-content">
+        <!-- 图片预览 -->
+        <div class="image-preview empty" id="imagePreview">
+          <div class="placeholder">
+            <div class="placeholder-icon">🖼️</div>
+            <p>填写参数后点击「生成晒单图」</p>
+            <p style="font-size: 12px; margin-top: 8px; opacity: 0.7;">支持 ETHUSDT、BTCUSDT 等交易对</p>
+          </div>
+        </div>
+        
+        <!-- JSON 预览 -->
+        <div class="json-preview" id="jsonPreview">
+          <div class="json-content">
+            <pre id="jsonContent">// 请求返回的 JSON 数据将显示在这里</pre>
+          </div>
+        </div>
+      </div>
+      
+      <div class="status-bar">
+        <div class="status">
+          <span class="status-dot" id="statusDot"></span>
+          <span id="statusText">准备就绪</span>
+        </div>
+        <div id="requestTime"></div>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    // 状态
+    let currentResult = null;
+    let currentTab = 'image';
+    
+    // 初始化：设置默认时间
+    window.addEventListener('DOMContentLoaded', () => {
+      fillQuick('yesterday');
+    });
+    
+    // 快捷填充
+    function fillQuick(type) {
+      const now = new Date();
+      let openDate, closeDate;
+      
+      switch (type) {
+        case 'yesterday':
+          openDate = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+          closeDate = new Date(now.getTime() - 60 * 60 * 1000);
+          break;
+        case 'week':
+          openDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+          closeDate = new Date(now.getTime() - 60 * 60 * 1000);
+          break;
+        case 'month':
+          openDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+          closeDate = new Date(now.getTime() - 60 * 60 * 1000);
+          break;
+        case 'random':
+          const randomDays = Math.floor(Math.random() * 30) + 1;
+          openDate = new Date(now.getTime() - randomDays * 24 * 60 * 60 * 1000);
+          closeDate = new Date(now.getTime() - 60 * 60 * 1000);
+          document.getElementById('lev').value = Math.floor(Math.random() * 150) + 10;
+          document.getElementById('direction').value = Math.random() > 0.5 ? 'long' : 'short';
+          break;
+      }
+      
+      document.getElementById('opendate').value = formatDateTime(openDate);
+      document.getElementById('date').value = formatDateTime(closeDate);
+    }
+    
+    function formatDateTime(date) {
+      const y = date.getFullYear();
+      const m = String(date.getMonth() + 1).padStart(2, '0');
+      const d = String(date.getDate()).padStart(2, '0');
+      const h = String(date.getHours()).padStart(2, '0');
+      const min = String(date.getMinutes()).padStart(2, '0');
+      return `${y}-${m}-${d} ${h}:${min}`;
+    }
+    
+    // 生成图片
+    async function generateImage() {
+      const btn = document.getElementById('generateBtn');
+      const statusDot = document.getElementById('statusDot');
+      const statusText = document.getElementById('statusText');
+      const requestTime = document.getElementById('requestTime');
+      
+      // 获取参数
+      const serverUrl = document.getElementById('serverUrl').value.trim();
+      const params = {
+        ex: document.getElementById('ex').value.trim(),
+        tradepair: document.getElementById('tradepair').value.trim(),
+        opendate: document.getElementById('opendate').value.trim(),
+        date: document.getElementById('date').value.trim(),
+        direction: document.getElementById('direction').value,
+        lev: document.getElementById('lev').value,
+        direction_action: document.getElementById('direction_action').value,
+        timezone: document.getElementById('timezone').value,
+        dynamic_direction_color: document.getElementById('dynamic_direction_color').checked,
+        refcode: document.getElementById('refcode').value.trim()
+      };
+      
+      // 验证必填参数
+      if (!params.tradepair || !params.opendate || !params.date) {
+        alert('请填写必填参数：交易对、开仓时间、显示时间');
+        return;
+      }
+      
+      // 构建 URL
+      const urlParams = new URLSearchParams();
+      if (params.ex) urlParams.set('ex', params.ex);
+      urlParams.set('tradepair', params.tradepair);
+      urlParams.set('opendate', params.opendate);
+      urlParams.set('date', params.date);
+      urlParams.set('direction', params.direction);
+      urlParams.set('lev', params.lev);
+      if (params.direction_action) urlParams.set('direction_action', params.direction_action);
+      if (params.timezone && params.timezone !== '+8') urlParams.set('timezone', params.timezone);
+      if (params.dynamic_direction_color) urlParams.set('dynamic_direction_color', 'true');
+      if (params.refcode) urlParams.set('refcode', params.refcode);
+      
+      const url = `${serverUrl}/api/generate?${urlParams.toString()}`;
+      
+      // 更新 UI 状态
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span><span>生成中...</span>';
+      statusDot.className = 'status-dot loading';
+      statusText.textContent = '正在请求...';
+      requestTime.textContent = '';
+      
+      const startTime = Date.now();
+      
+      try {
+        const response = await fetch(url, {
+          headers: {
+            'ngrok-skip-browser-warning': 'true'
+          }
+        });
+        
+        const elapsed = Date.now() - startTime;
+        requestTime.textContent = `耗时: ${elapsed}ms`;
+        
+        const result = await response.json();
+        currentResult = result;
+        
+        if (result.success) {
+          // 成功
+          statusDot.className = 'status-dot success';
+          statusText.textContent = `成功 - ${result.tradeInfo?.yield || ''}`;
+          
+          showImageResult(result);
+          showJsonResult(result);
+          
+          document.getElementById('downloadBtn').style.display = 'block';
+          document.getElementById('copyBtn').style.display = 'block';
+        } else {
+          // 失败
+          statusDot.className = 'status-dot error';
+          statusText.textContent = '生成失败';
+          
+          showError(result.message || result.error || '未知错误');
+          showJsonResult(result);
+          
+          document.getElementById('downloadBtn').style.display = 'none';
+          document.getElementById('copyBtn').style.display = 'block';
+        }
+        
+      } catch (error) {
+        const elapsed = Date.now() - startTime;
+        requestTime.textContent = `耗时: ${elapsed}ms`;
+        
+        statusDot.className = 'status-dot error';
+        statusText.textContent = '请求失败';
+        
+        showError(`请求失败: ${error.message}\n\n请确保 API 服务已启动 (node server.js)`);
+        
+        document.getElementById('downloadBtn').style.display = 'none';
+        document.getElementById('copyBtn').style.display = 'none';
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<span>⚡</span><span>生成晒单图</span>';
+      }
+    }
+    
+    // 显示图片结果
+    function showImageResult(result) {
+      const preview = document.getElementById('imagePreview');
+      const width = result.data?.width || 908;
+      const height = result.data?.height || 1280;
+      const refcode = result.tradeInfo?.ref || '-';
+      const qrcodeUrl = result.tradeInfo?.qrcode_url || '';
+      
+      preview.className = 'image-preview';
+      preview.innerHTML = `
+        <div class="success-message">
+          ✅ ${result.message}
+        </div>
+        <img src="${result.data.image}" class="preview-image" alt="晒单图">
+        <div class="image-info">
+          <span>📐 尺寸: ${width} × ${height}</span>
+          <span>📊 交易对: ${result.tradepair?.display || '-'}</span>
+          <span>💰 收益: ${result.tradeInfo?.yield || '-'}</span>
+          <span>📈 杠杆: ${result.tradeInfo?.leverage}x</span>
+        </div>
+        ${qrcodeUrl ? `
+        <div class="image-info" style="margin-top: 8px;">
+          <span>📱 邀请码: <strong>${refcode}</strong></span>
+          <span style="flex: 2;">🔗 二维码链接: <a href="${qrcodeUrl}" target="_blank" style="color: var(--accent-blue);">${qrcodeUrl}</a></span>
+        </div>
+        ` : ''}
+      `;
+    }
+    
+    // 显示错误
+    function showError(message) {
+      const preview = document.getElementById('imagePreview');
+      preview.className = 'image-preview';
+      preview.innerHTML = `
+        <div class="error-message">
+          <h3>❌ 生成失败</h3>
+          <p>${message}</p>
+        </div>
+      `;
+    }
+    
+    // 显示 JSON 结果
+    function showJsonResult(result) {
+      const content = document.getElementById('jsonContent');
+      content.textContent = JSON.stringify(result, null, 2);
+    }
+    
+    // 切换标签
+    function switchTab(tab) {
+      currentTab = tab;
+      
+      document.querySelectorAll('.result-tab').forEach(t => t.classList.remove('active'));
+      event.target.classList.add('active');
+      
+      document.getElementById('imagePreview').style.display = tab === 'image' ? 'flex' : 'none';
+      document.getElementById('jsonPreview').style.display = tab === 'json' ? 'block' : 'none';
+      document.getElementById('jsonPreview').classList.toggle('active', tab === 'json');
+    }
+    
+    // 下载图片
+    function downloadImage() {
+      if (!currentResult?.data?.image) return;
+      
+      const a = document.createElement('a');
+      a.href = currentResult.data.image;
+      a.download = `${currentResult.tradepair?.symbol || 'trade'}-${Date.now()}.png`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
+    
+    // 复制 JSON
+    function copyJson() {
+      if (!currentResult) return;
+      
+      const text = JSON.stringify(currentResult, null, 2);
+      navigator.clipboard.writeText(text).then(() => {
+        const btn = document.getElementById('copyBtn');
+        btn.textContent = '✅ 已复制';
+        setTimeout(() => {
+          btn.textContent = '📋 复制 JSON';
+        }, 2000);
+      });
+    }
+    
+    // 键盘快捷键
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+        generateImage();
+      }
+    });
+    
+    // 切换参数文档显示
+    function toggleDocs() {
+      const content = document.getElementById('docsContent');
+      const toggle = document.getElementById('docsToggle');
+      if (content.style.display === 'none') {
+        content.style.display = 'block';
+        toggle.textContent = '▲';
+      } else {
+        content.style.display = 'none';
+        toggle.textContent = '▼';
+      }
+    }
+  </script>
+</body>
+</html>
+
+

@@ -1,0 +1,32 @@
+# 依赖
+node_modules/
+
+# 日志
+*.log
+server.log
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# 运行时
+*.pid
+
+# 字体文件（需单独下载）
+fonts/*.ttf
+fonts/*.otf
+fonts/*.woff
+fonts/*.woff2
+!fonts/harmonyos-sans.css
+!fonts/download-fonts.sh
+
+# 临时文件
+*.tmp
+*.temp
+

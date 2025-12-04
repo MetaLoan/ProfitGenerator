@@ -1,0 +1,2062 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>合约模拟计算器 & 晒单生成器</title>
+  <!-- Google Fonts 预连接 -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <!-- html2canvas 用于截图导出 -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <!-- QRCode.js 用于二维码预览 -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <!-- HarmonyOS Sans SC 字体 - 全字重 (本地 + CDN 备用) -->
+  <link rel="stylesheet" href="/fonts/harmonyos-sans.css">
+  <link rel="stylesheet" href="https://s1.hdslb.com/bfs/static/jinkela/long/font/regular.css">
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei",sans-serif;
+      background: #111;
+      color: #eee;
+    }
+    .app {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+    header {
+      padding: 8px 16px;
+      border-bottom: 1px solid #333;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #181818;
+    }
+    header h1 {
+      font-size: 16px;
+      margin: 0;
+    }
+    header small {
+      font-size: 12px;
+      color: #999;
+    }
+    main {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 300px minmax(400px,1fr) 280px;
+      min-height: 0;
+    }
+    .panel {
+      padding: 10px;
+      border-right: 1px solid #222;
+      overflow-y: auto;
+    }
+    .panel-right {
+      border-right: none;
+      border-left: 1px solid #222;
+      padding: 10px;
+      overflow-y: auto;
+    }
+    h2 {
+      font-size: 14px;
+      margin: 6px 0;
+    }
+    h3 {
+      font-size: 13px;
+      margin: 4px 0;
+    }
+    label {
+      font-size: 12px;
+      display: block;
+      margin-top: 6px;
+      margin-bottom: 2px;
+      color: #aaa;
+    }
+    input[type="number"], input[type="text"], select, textarea {
+      width: 100%;
+      padding: 4px 6px;
+      border-radius: 4px;
+      border: 1px solid #444;
+      background: #181818;
+      color: #eee;
+      font-size: 12px;
+    }
+    textarea {
+      resize: vertical;
+      min-height: 80px;
+    }
+    input[type="file"] {
+      font-size: 12px;
+      width: 100%;
+    }
+    input[type="checkbox"] {
+      margin-right: 6px;
+    }
+    button {
+      padding: 4px 8px;
+      margin-top: 6px;
+      margin-right: 4px;
+      border-radius: 4px;
+      border: 1px solid #444;
+      background: #222;
+      color: #eee;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    button.primary {
+      background: #007aff;
+      border-color: #007aff;
+    }
+    button.danger {
+      background: #9b111e;
+      border-color: #9b111e;
+    }
+    button.success {
+      background: #21C07C;
+      border-color: #21C07C;
+      color: #000;
+    }
+    button:disabled {
+      opacity: 0.5;
+      cursor: default;
+    }
+    .small {
+      font-size: 12px;
+      color: #888;
+    }
+
+    /* 编辑区域 */
+    .editor-wrapper {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      background: #000;
+      padding: 10px;
+      overflow: auto;
+    }
+    .editor-toolbar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+      font-size: 12px;
+      color: #aaa;
+    }
+    .editor-toolbar input[type="range"] {
+      width: 120px;
+    }
+    .editor-outer {
+      position: relative;
+      margin: 0 auto;
+      border: 1px solid #333;
+      background: #111;
+      overflow: auto;
+      max-height: calc(100vh - 120px);
+    }
+    .editor-inner {
+      position: relative;
+      transform-origin: top left;
+    }
+    #referenceImage {
+      position: absolute;
+      left: 0;
+      top: 0;
+      max-width: none; /* 保持原始像素 */
+      image-rendering: pixelated;
+      pointer-events: none;
+    }
+    #overlay {
+      position: absolute;
+      left: 0;
+      top: 0;
+    }
+    .text-layer {
+      position: absolute;
+      white-space: pre;
+      cursor: move;
+      user-select: none;
+      pointer-events: auto;
+      text-shadow: 0 0 1px rgba(0,0,0,.8);
+    }
+    .text-layer.selected {
+      outline: 1px dashed #00bcd4;
+    }
+    /* 子层级容器 - 水平排列 */
+    .text-layer-children {
+      display: flex;
+      flex-direction: row;
+      align-items: flex-start;
+      line-height: 1;
+    }
+    .text-layer-child {
+      white-space: pre;
+      line-height: 1;
+      vertical-align: top;
+    }
+    .layer-list {
+      border: 1px solid #333;
+      border-radius: 4px;
+      padding: 4px;
+      max-height: 160px;
+      overflow-y: auto;
+      font-size: 12px;
+    }
+    .layer-item {
+      padding: 2px 4px;
+      border-radius: 3px;
+      margin-bottom: 2px;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .layer-item span {
+      flex: 1;
+    }
+    .layer-item small {
+      color: #666;
+      margin-left: 4px;
+    }
+    .layer-item.active {
+      background: #1e3a5f;
+    }
+    .layer-item button {
+      margin: 0 0 0 4px;
+      padding: 0 4px;
+      font-size: 11px;
+    }
+    .row {
+      display: flex;
+      gap: 6px;
+    }
+    .row > div {
+      flex: 1;
+    }
+    .calc-result {
+      margin-top: 8px;
+      padding: 6px;
+      border-radius: 4px;
+      background: #121212;
+      border: 1px solid #333;
+      font-size: 12px;
+      line-height: 1.4;
+    }
+    hr {
+      border: none;
+      border-top: 1px solid #333;
+      margin: 10px 0;
+    }
+    
+    /* 子层级编辑区 */
+    .children-section {
+      margin-top: 8px;
+      padding: 8px;
+      background: #1a1a1a;
+      border-radius: 4px;
+      border: 1px solid #333;
+    }
+    .children-list {
+      max-height: 120px;
+      overflow-y: auto;
+      margin-bottom: 6px;
+    }
+    .child-item {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px;
+      margin-bottom: 4px;
+      background: #222;
+      border-radius: 3px;
+      font-size: 11px;
+    }
+    .child-item.active {
+      background: #1e3a5f;
+    }
+    .child-item input {
+      flex: 1;
+      padding: 2px 4px;
+      font-size: 11px;
+    }
+    .child-item button {
+      padding: 2px 6px;
+      margin: 0;
+      font-size: 10px;
+    }
+    .child-style-editor {
+      margin-top: 6px;
+      padding: 6px;
+      background: #252525;
+      border-radius: 3px;
+    }
+    .badge {
+      display: inline-block;
+      padding: 1px 6px;
+      border-radius: 3px;
+      font-size: 10px;
+      margin-left: 4px;
+    }
+    .badge-children {
+      background: #4fc3f7;
+      color: #000;
+    }
+    .badge-qrcode {
+      background: #21C07C;
+      color: #000;
+    }
+    /* 二维码图层显示 */
+    .qrcode-layer {
+      position: absolute;
+      border: 2px dashed #21C07C;
+      background: #ffffff;
+      cursor: move;
+      overflow: hidden;
+    }
+    .qrcode-layer.selected {
+      border-color: #00bcd4;
+    }
+    .qrcode-layer canvas,
+    .qrcode-layer img {
+      width: 100% !important;
+      height: 100% !important;
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>合约模拟计算器 & 晒单模板编辑器</h1>
+    <small>箭头键像素级移动 · Shift+箭头 10 像素 · 支持子层级</small>
+  </header>
+  <main>
+    <!-- 左侧：图片 & 编辑控制 -->
+    <section class="panel">
+      <h2>① 上传参考图</h2>
+      <label>参考图（PNG / JPG）</label>
+      <input type="file" id="imageInput" accept="image/png,image/jpeg,image/webp">
+
+      <div class="small" style="margin-top:4px;">
+        建议：先截一张真实交易所的晒单图原图，用它来做模板对齐。
+      </div>
+
+      <hr>
+
+      <h2>② 文字图层控制</h2>
+      <button id="addTextLayerBtn" class="primary" disabled>添加文字图层</button>
+      <button id="addQRCodeLayerBtn" class="success" disabled>添加二维码图层</button>
+      <div class="small">可以先加固定文字，再加几个可变数字 / 日期的位置。二维码用于邀请链接。</div>
+
+      <label style="margin-top:8px;">图层列表</label>
+      <div id="layerList" class="layer-list"></div>
+
+      <div id="layerEditor" style="margin-top:8px; display:none;">
+        <h3>当前图层属性</h3>
+        <label>内容（支持占位符，如 {{price}}）</label>
+        <input type="text" id="layerTextInput">
+
+        <div class="row">
+          <div>
+            <label>字体</label>
+            <select id="layerFontFamily">
+              <option value="system-ui">系统默认</option>
+              <option value="HarmonyOS Sans SC">HarmonyOS Sans</option>
+              <option value="Arial">Arial</option>
+              <option value="PingFang SC">苹方</option>
+              <option value="Microsoft YaHei">微软雅黑</option>
+              <option value="Menlo">等宽 Menlo</option>
+            </select>
+          </div>
+          <div>
+            <label>字号(px)</label>
+            <input type="number" id="layerFontSize" min="6" max="200" value="14">
+          </div>
+        </div>
+
+        <div style="margin-top:8px; padding:8px; background:#1a1a1a; border-radius:4px;">
+          <label style="margin-top:0;">添加在线字体 (Google Fonts)</label>
+          <input type="text" id="googleFontUrl" placeholder="粘贴 Google Fonts 链接，如: https://fonts.googleapis.com/css2?family=Noto+Sans+SC">
+          <button id="loadGoogleFontBtn" style="margin-top:4px;">加载字体</button>
+          <div class="small" style="margin-top:4px;">
+            💡 访问 <a href="https://fonts.google.com" target="_blank" style="color:#4fc3f7;">fonts.google.com</a> → 选字体 → 复制链接<br>
+            ⚡ 会自动解析字体名称，自动添加可变字重支持
+          </div>
+        </div>
+
+        <div class="row">
+          <div>
+            <label>颜色</label>
+            <input type="text" id="layerColor" value="#ffffff" placeholder="#rrggbb">
+          </div>
+          <div>
+            <label>字重 <span id="weightDisplay">400</span></label>
+            <select id="layerWeight" style="width:100%;">
+              <option value="100">100 - Thin 极细</option>
+              <option value="300">300 - Light 细</option>
+              <option value="400" selected>400 - Regular 常规</option>
+              <option value="500">500 - Medium 中等</option>
+              <option value="700">700 - Bold 粗</option>
+              <option value="900">900 - Black 特粗</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="row">
+          <div>
+            <label>字间距(px)</label>
+            <input type="number" id="layerLetterSpacing" value="0" step="0.5">
+          </div>
+          <div>
+            <label>行高(倍)</label>
+            <input type="number" id="layerLineHeight" value="1.2" step="0.1" min="0.5" max="3">
+          </div>
+        </div>
+
+        <div class="row">
+          <div>
+            <label>X 像素</label>
+            <input type="number" id="layerX">
+          </div>
+          <div>
+            <label>Y 像素</label>
+            <input type="number" id="layerY">
+          </div>
+        </div>
+        
+        <!-- 子层级编辑区 -->
+        <div class="children-section">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <h3 style="margin:0;">子层级 <span class="small">(水平排列)</span></h3>
+            <button id="addChildBtn" class="success" style="margin:0; padding:2px 8px;">+ 添加子元素</button>
+          </div>
+          <div class="small" style="margin:4px 0;">
+            启用子层级后，主内容变为容器，子元素从左到右排列，每个子元素可独立设置样式
+          </div>
+          
+          <div id="childrenList" class="children-list"></div>
+          
+          <div id="childStyleEditor" style="display:none;" class="child-style-editor">
+            <h4 style="font-size:12px; margin:0 0 6px 0;">子元素样式</h4>
+            <div class="row">
+              <div>
+                <label style="margin-top:0;">内容</label>
+                <input type="text" id="childText">
+              </div>
+              <div>
+                <label style="margin-top:0;">间距(px)</label>
+                <input type="number" id="childGap" value="0" step="1">
+              </div>
+            </div>
+            <div class="row">
+              <div>
+                <label>颜色 <span class="small">(留空继承)</span></label>
+                <input type="text" id="childColor" placeholder="继承父级">
+              </div>
+              <div>
+                <label>字号 <span class="small">(留空继承)</span></label>
+                <input type="number" id="childFontSize" placeholder="继承">
+              </div>
+            </div>
+            <div class="row">
+              <div>
+                <label>字重 <span class="small">(留空继承)</span></label>
+                <select id="childFontWeight" style="width:100%;">
+                  <option value="">继承父级</option>
+                  <option value="100">100 - Thin</option>
+                  <option value="300">300 - Light</option>
+                  <option value="400">400 - Regular</option>
+                  <option value="500">500 - Medium</option>
+                  <option value="700">700 - Bold</option>
+                  <option value="900">900 - Black</option>
+                </select>
+              </div>
+              <div>
+                <label>
+                  <input type="checkbox" id="childDynamicColor">
+                  动态方向变色
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 二维码图层编辑器 -->
+      <div id="qrcodeEditor" style="margin-top:8px; display:none;">
+        <h3>二维码图层属性 <span class="badge" style="background:#4fc3f7; color:#000;">QR</span></h3>
+        <div class="small" style="margin-bottom:6px;">
+          二维码将根据交易所配置的链接 + 邀请码生成，邀请码用 {{ref}} 表示
+        </div>
+        
+        <div class="row">
+          <div>
+            <label>X 像素</label>
+            <input type="number" id="qrcodeX">
+          </div>
+          <div>
+            <label>Y 像素</label>
+            <input type="number" id="qrcodeY">
+          </div>
+        </div>
+        
+        <div class="row">
+          <div>
+            <label>宽度(px)</label>
+            <input type="number" id="qrcodeWidth" value="100" min="50" max="300">
+          </div>
+          <div>
+            <label>高度(px)</label>
+            <input type="number" id="qrcodeHeight" value="100" min="50" max="300">
+          </div>
+        </div>
+        
+        <div style="margin-top:8px; padding:8px; background:#1a1a1a; border-radius:4px;">
+          <label style="margin-top:0;">预览链接（用于本地预览）</label>
+          <input type="text" id="qrcodePreviewUrl" placeholder="输入链接预览二维码效果..." value="https://example.com/ref/PREVIEW">
+          <button id="refreshQrcodeBtn" style="margin-top:4px; width:100%;">🔄 刷新预览二维码</button>
+          <div class="small" style="margin-top:4px;">
+            ⚠️ 这只是预览用的链接，实际由 API 的 refcode 参数 + 交易所 config.json 配置的 baseUrl 生成
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 中间：画布编辑区域 -->
+    <section class="editor-wrapper">
+      <div class="editor-toolbar">
+        <span>参考图透明度</span>
+        <input type="range" id="opacityRange" min="0" max="100" value="100">
+        <span id="opacityValue">100%</span>
+
+        <span style="margin-left:16px;">画布缩放</span>
+        <input type="range" id="zoomRange" min="25" max="300" value="100">
+        <span id="zoomValue">100%</span>
+
+        <label style="margin-left:16px; display:flex; align-items:center; cursor:pointer;">
+          <input type="checkbox" id="liveApiRender" style="margin-right:4px;">
+          <span>🔴 实时API渲染</span>
+        </label>
+        <span id="liveApiStatus" style="margin-left:8px; font-size:11px; color:#666;"></span>
+
+        <button id="exportImageBtn" style="margin-left:auto;" disabled>生成晒单 PNG</button>
+        <button id="exportViaApiBtn" style="margin-left:8px;" disabled title="使用后端 API 生成，与接口效果完全一致">🔗 API生成</button>
+      </div>
+
+      <div class="editor-outer">
+        <div id="editorInner" class="editor-inner">
+          <img id="referenceImage" alt="">
+          <div id="overlay"></div>
+          <!-- API 渲染结果叠加层 -->
+          <img id="apiRenderOverlay" style="position:absolute; left:0; top:0; pointer-events:none; display:none; z-index:10;">
+        </div>
+      </div>
+    </section>
+
+    <!-- 右侧：模板 JSON & 计算器 -->
+    <section class="panel-right">
+      <h2>③ 模板导入 / 导出</h2>
+      <div class="small">
+        当你把所有文字位置都调好后，导出模板 JSON，存数据库就行。后面只要填变量就可以一键生成晒图。
+      </div>
+
+      <button id="exportTemplateBtn" style="margin-top:6px;" disabled>导出模板 JSON</button>
+      <button id="importTemplateBtn" style="margin-top:6px;">导入模板 JSON</button>
+
+      <label style="margin-top:6px;">模板 JSON</label>
+      <textarea id="templateJsonArea" placeholder='{"width":..., "height":..., "layers":[...]}'></textarea>
+
+      <hr>
+
+      <h2>④ 合约盈亏模拟计算器</h2>
+      <div class="row">
+        <div>
+          <label>方向</label>
+          <select id="direction">
+            <option value="long">做多</option>
+            <option value="short">做空</option>
+          </select>
+        </div>
+        <div>
+          <label>杠杆</label>
+          <input type="number" id="leverage" value="10" min="1">
+        </div>
+      </div>
+
+      <label>开仓价</label>
+      <input type="number" id="entryPrice" value="65000" step="0.0001">
+
+      <label>平仓价</label>
+      <input type="number" id="exitPrice" value="66000" step="0.0001">
+
+      <label>合约张数 / 数量</label>
+      <input type="number" id="quantity" value="1" step="0.0001">
+
+      <label>合约面值（比如 1 张 = 1 USDT 面值，留空则用 1）</label>
+      <input type="number" id="contractSize" placeholder="默认 1" step="0.0001">
+
+      <button id="calcBtn" class="primary">计算盈亏</button>
+
+      <div id="calcResult" class="calc-result">
+        等待输入…
+      </div>
+
+      <div class="small" style="margin-top:6px;">
+        你可以约定某个文字图层内容写成「收益：{{pnl}} USDT」，然后在生成图片前用 JS 替换这些占位符。
+      </div>
+
+      <hr>
+
+      <h2>⑤ API 实时预览</h2>
+      <div class="small" style="margin-bottom:8px;">
+        输入真实交易参数，调用 API 实时预览最终生成效果
+      </div>
+
+      <div class="row">
+        <div>
+          <label>API 服务器</label>
+          <input type="text" id="apiServer" value="http://localhost:3070" placeholder="http://localhost:3070">
+        </div>
+      </div>
+
+      <div class="row">
+        <div>
+          <label>交易所</label>
+          <select id="apiExchange">
+            <option value="easicoin">Easicoin</option>
+            <option value="lbanken">LBanken</option>
+          </select>
+        </div>
+        <div>
+          <label>交易对</label>
+          <input type="text" id="apiTradepair" value="ETHUSDT" placeholder="ETHUSDT">
+        </div>
+      </div>
+
+      <div class="row">
+        <div>
+          <label>开仓时间</label>
+          <input type="text" id="apiOpendate" placeholder="2025-12-01 10:00">
+        </div>
+        <div>
+          <label>显示时间</label>
+          <input type="text" id="apiDate" placeholder="2025-12-04 18:00">
+        </div>
+      </div>
+
+      <div class="row">
+        <div>
+          <label>方向</label>
+          <select id="apiDirection">
+            <option value="long">做多 (Long)</option>
+            <option value="short">做空 (Short)</option>
+          </select>
+        </div>
+        <div>
+          <label>杠杆</label>
+          <input type="number" id="apiLev" value="50" min="1" max="500">
+        </div>
+      </div>
+
+      <div class="row">
+        <div>
+          <label>时区</label>
+          <select id="apiTimezone">
+            <option value="+8">UTC+8 北京</option>
+            <option value="+9">UTC+9 东京</option>
+            <option value="+0">UTC+0 伦敦</option>
+            <option value="-5">UTC-5 纽约</option>
+            <option value="-8">UTC-8 洛杉矶</option>
+          </select>
+        </div>
+        <div>
+          <label style="display:flex; align-items:center; margin-top:20px;">
+            <input type="checkbox" id="apiDynamicColor" checked>
+            动态方向变色
+          </label>
+        </div>
+      </div>
+
+      <div style="display:flex; gap:6px; margin-top:8px;">
+        <button id="apiPreviewBtn" class="primary" style="flex:1;">🔄 实时预览</button>
+        <button id="apiFillTimeBtn" style="flex:1;">⏰ 填充时间</button>
+      </div>
+
+      <div id="apiPreviewResult" style="margin-top:8px; padding:8px; background:#121212; border:1px solid #333; border-radius:4px; min-height:60px; font-size:11px; color:#888; text-align:center;">
+        点击「实时预览」调用 API 生成图片
+      </div>
+
+      <div id="apiPreviewImage" style="margin-top:8px; text-align:center; display:none;">
+        <img id="apiResultImg" style="max-width:100%; border-radius:4px; box-shadow:0 2px 10px rgba(0,0,0,0.5);">
+        <div style="margin-top:4px;">
+          <button id="apiDownloadBtn" class="success" style="font-size:11px;">⬇️ 下载图片</button>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script>
+(function() {
+  // 状态
+  let currentImage = null;
+  let imageWidth = 0;
+  let imageHeight = 0;
+  let layers = [];
+  let selectedLayerId = null;
+  let selectedChildIndex = -1;  // 当前选中的子层级索引
+  let zoom = 1.0;
+
+  const imageInput = document.getElementById('imageInput');
+  const refImg = document.getElementById('referenceImage');
+  const overlay = document.getElementById('overlay');
+  const editorInner = document.getElementById('editorInner');
+
+  const addTextLayerBtn = document.getElementById('addTextLayerBtn');
+  const exportImageBtn = document.getElementById('exportImageBtn');
+  const exportViaApiBtn = document.getElementById('exportViaApiBtn');
+  const exportTemplateBtn = document.getElementById('exportTemplateBtn');
+  const importTemplateBtn = document.getElementById('importTemplateBtn');
+  const templateJsonArea = document.getElementById('templateJsonArea');
+
+  const opacityRange = document.getElementById('opacityRange');
+  const opacityValue = document.getElementById('opacityValue');
+  const zoomRange = document.getElementById('zoomRange');
+  const zoomValue = document.getElementById('zoomValue');
+
+  const layerList = document.getElementById('layerList');
+  const layerEditor = document.getElementById('layerEditor');
+  const layerTextInput = document.getElementById('layerTextInput');
+  const layerFontFamily = document.getElementById('layerFontFamily');
+  const layerFontSize = document.getElementById('layerFontSize');
+  const layerColor = document.getElementById('layerColor');
+  const layerWeight = document.getElementById('layerWeight');
+  const weightDisplay = document.getElementById('weightDisplay');
+  const layerLetterSpacing = document.getElementById('layerLetterSpacing');
+  const layerLineHeight = document.getElementById('layerLineHeight');
+  const layerX = document.getElementById('layerX');
+  const layerY = document.getElementById('layerY');
+
+  // 子层级相关
+  const addChildBtn = document.getElementById('addChildBtn');
+  const childrenList = document.getElementById('childrenList');
+  const childStyleEditor = document.getElementById('childStyleEditor');
+  const childText = document.getElementById('childText');
+  const childGap = document.getElementById('childGap');
+  const childColor = document.getElementById('childColor');
+  const childFontSize = document.getElementById('childFontSize');
+  const childFontWeight = document.getElementById('childFontWeight');
+  const childDynamicColor = document.getElementById('childDynamicColor');
+
+  // 二维码图层相关
+  const addQRCodeLayerBtn = document.getElementById('addQRCodeLayerBtn');
+  const qrcodeEditor = document.getElementById('qrcodeEditor');
+  const qrcodeX = document.getElementById('qrcodeX');
+  const qrcodeY = document.getElementById('qrcodeY');
+  const qrcodeWidth = document.getElementById('qrcodeWidth');
+  const qrcodeHeight = document.getElementById('qrcodeHeight');
+  const qrcodePreviewUrl = document.getElementById('qrcodePreviewUrl');
+  const refreshQrcodeBtn = document.getElementById('refreshQrcodeBtn');
+  let qrcodePreviewUrlValue = 'https://example.com/ref/PREVIEW';  // 预览链接
+
+  // 在线字体
+  const googleFontUrl = document.getElementById('googleFontUrl');
+  const loadGoogleFontBtn = document.getElementById('loadGoogleFontBtn');
+  const loadedFontUrls = new Set();
+
+  // 计算器
+  const directionEl = document.getElementById('direction');
+  const leverageEl = document.getElementById('leverage');
+  const entryPriceEl = document.getElementById('entryPrice');
+  const exitPriceEl = document.getElementById('exitPrice');
+  const quantityEl = document.getElementById('quantity');
+  const contractSizeEl = document.getElementById('contractSize');
+  const calcBtn = document.getElementById('calcBtn');
+  const calcResult = document.getElementById('calcResult');
+
+  // 工具函数
+  function genId() {
+    return 'L' + Math.random().toString(36).slice(2, 9);
+  }
+
+  function ensureImageLoaded() {
+    if (!currentImage) {
+      alert('请先上传参考图');
+      return false;
+    }
+    return true;
+  }
+
+  function findLayer(id) {
+    return layers.find(l => l.id === id) || null;
+  }
+
+  function renderEditorSize() {
+    editorInner.style.width = imageWidth + 'px';
+    editorInner.style.height = imageHeight + 'px';
+    refImg.style.width = imageWidth + 'px';
+    refImg.style.height = imageHeight + 'px';
+    overlay.style.width = imageWidth + 'px';
+    overlay.style.height = imageHeight + 'px';
+  }
+
+  function renderZoom() {
+    editorInner.style.transform = 'scale(' + zoom + ')';
+    zoomValue.textContent = Math.round(zoom * 100) + '%';
+  }
+
+  function renderLayersList() {
+    layerList.innerHTML = '';
+    if (layers.length === 0) {
+      layerList.innerHTML = '<div class="small">暂无图层</div>';
+      return;
+    }
+    layers.forEach((l, index) => {
+      const div = document.createElement('div');
+      div.className = 'layer-item' + (l.id === selectedLayerId ? ' active' : '');
+      div.dataset.id = l.id;
+
+      const span = document.createElement('span');
+      if (l.type === 'qrcode') {
+        // 二维码图层
+        span.innerHTML = `📱 二维码 <span class="badge badge-qrcode">QR</span>`;
+      } else {
+        // 文字图层
+        span.innerHTML = (l.text || '(空)') + 
+          (l.children && l.children.length > 0 ? `<span class="badge badge-children">${l.children.length}子</span>` : '');
+      }
+      const pos = document.createElement('small');
+      pos.textContent = l.type === 'qrcode' ? `(${l.x}, ${l.y}) ${l.width}x${l.height}` : `(${l.x}, ${l.y})`;
+
+      const delBtn = document.createElement('button');
+      delBtn.textContent = '删';
+      delBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        deleteLayer(l.id);
+      });
+
+      div.appendChild(span);
+      div.appendChild(pos);
+      div.appendChild(delBtn);
+
+      div.addEventListener('click', () => {
+        selectLayer(l.id);
+      });
+
+      layerList.appendChild(div);
+    });
+  }
+
+  function renderChildrenList() {
+    const layer = findLayer(selectedLayerId);
+    childrenList.innerHTML = '';
+    
+    if (!layer || !layer.children || layer.children.length === 0) {
+      childrenList.innerHTML = '<div class="small" style="padding:4px;">暂无子元素，点击上方按钮添加</div>';
+      childStyleEditor.style.display = 'none';
+      return;
+    }
+    
+    layer.children.forEach((child, idx) => {
+      const div = document.createElement('div');
+      div.className = 'child-item' + (idx === selectedChildIndex ? ' active' : '');
+      
+      const textSpan = document.createElement('span');
+      textSpan.textContent = child.text || '(空)';
+      textSpan.style.flex = '1';
+      textSpan.style.cursor = 'pointer';
+      textSpan.addEventListener('click', () => {
+        selectedChildIndex = idx;
+        renderChildrenList();
+        renderChildEditor();
+      });
+      
+      const colorIndicator = document.createElement('span');
+      colorIndicator.style.cssText = `width:12px; height:12px; border-radius:2px; background:${child.color || layer.color}; margin:0 4px;`;
+      
+      const delBtn = document.createElement('button');
+      delBtn.textContent = '×';
+      delBtn.className = 'danger';
+      delBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        layer.children.splice(idx, 1);
+        if (selectedChildIndex >= layer.children.length) {
+          selectedChildIndex = layer.children.length - 1;
+        }
+        renderChildrenList();
+        renderChildEditor();
+        renderOverlay();
+      });
+      
+      div.appendChild(textSpan);
+      div.appendChild(colorIndicator);
+      div.appendChild(delBtn);
+      childrenList.appendChild(div);
+    });
+  }
+
+  function renderChildEditor() {
+    const layer = findLayer(selectedLayerId);
+    if (!layer || !layer.children || selectedChildIndex < 0 || selectedChildIndex >= layer.children.length) {
+      childStyleEditor.style.display = 'none';
+      return;
+    }
+    
+    childStyleEditor.style.display = 'block';
+    const child = layer.children[selectedChildIndex];
+    
+    childText.value = child.text || '';
+    childGap.value = child.gap || 0;
+    childColor.value = child.color || '';
+    childFontSize.value = child.fontSize || '';
+    childFontWeight.value = child.fontWeight || '';
+    childDynamicColor.checked = child.dynamicColor || false;
+  }
+
+  function renderLayerEditor() {
+    const layer = findLayer(selectedLayerId);
+    if (!layer) {
+      layerEditor.style.display = 'none';
+      qrcodeEditor.style.display = 'none';
+      return;
+    }
+    
+    // 根据图层类型显示不同的编辑器
+    if (layer.type === 'qrcode') {
+      // 二维码图层编辑器
+      layerEditor.style.display = 'none';
+      qrcodeEditor.style.display = 'block';
+      qrcodeX.value = layer.x;
+      qrcodeY.value = layer.y;
+      qrcodeWidth.value = layer.width || 100;
+      qrcodeHeight.value = layer.height || 100;
+      qrcodePreviewUrl.value = qrcodePreviewUrlValue;  // 显示当前预览链接
+    } else {
+      // 文字图层编辑器
+      qrcodeEditor.style.display = 'none';
+      layerEditor.style.display = 'block';
+      layerTextInput.value = layer.text;
+      
+      // 检查字体是否在下拉列表中，如果不在则添加
+      let fontExists = false;
+      for (const opt of layerFontFamily.options) {
+        if (opt.value === layer.fontFamily) {
+          fontExists = true;
+          break;
+        }
+      }
+      if (!fontExists && layer.fontFamily) {
+        const newOpt = document.createElement('option');
+        newOpt.value = layer.fontFamily;
+        newOpt.textContent = layer.fontFamily + ' (导入)';
+        layerFontFamily.appendChild(newOpt);
+      }
+      layerFontFamily.value = layer.fontFamily;
+      
+      layerFontSize.value = layer.fontSize;
+      layerColor.value = layer.color;
+      
+      // 兼容旧模板的 normal/bold
+      let weight = layer.fontWeight;
+      if (weight === 'normal') weight = 400;
+      else if (weight === 'bold') weight = 700;
+      else weight = parseInt(weight, 10) || 400;
+      layerWeight.value = weight;
+      weightDisplay.textContent = weight;
+      layerLetterSpacing.value = layer.letterSpacing || 0;
+      layerLineHeight.value = layer.lineHeight || 1.2;
+      layerX.value = layer.x;
+      layerY.value = layer.y;
+      
+      // 渲染子层级列表
+      selectedChildIndex = (layer.children && layer.children.length > 0) ? 0 : -1;
+      renderChildrenList();
+      renderChildEditor();
+    }
+  }
+
+  function renderOverlay() {
+    overlay.innerHTML = '';
+    layers.forEach(layer => {
+      let el;
+      
+      // 二维码图层
+      if (layer.type === 'qrcode') {
+        el = document.createElement('div');
+        el.className = 'qrcode-layer' + (layer.id === selectedLayerId ? ' selected' : '');
+        el.dataset.id = layer.id;
+        el.style.left = layer.x + 'px';
+        el.style.top = layer.y + 'px';
+        el.style.width = layer.width + 'px';
+        el.style.height = layer.height + 'px';
+        
+        // 生成占位二维码预览
+        const qrContainer = document.createElement('div');
+        qrContainer.style.cssText = 'width: 100%; height: 100%;';
+        el.appendChild(qrContainer);
+        
+        // 延迟生成二维码（等待 DOM 插入）
+        setTimeout(() => {
+          if (typeof QRCode !== 'undefined' && qrContainer.parentElement) {
+            qrContainer.innerHTML = '';  // 清空
+            new QRCode(qrContainer, {
+              text: qrcodePreviewUrlValue || 'https://example.com/ref/PREVIEW',
+              width: layer.width - 4,
+              height: layer.height - 4,
+              colorDark: '#000000',
+              colorLight: '#ffffff',
+              correctLevel: QRCode.CorrectLevel.M
+            });
+          }
+        }, 10);
+      } else {
+        // 文字图层
+        el = document.createElement('div');
+        el.className = 'text-layer' + (layer.id === selectedLayerId ? ' selected' : '');
+        el.dataset.id = layer.id;
+        el.style.left = layer.x + 'px';
+        el.style.top = layer.y + 'px';
+        el.style.fontFamily = layer.fontFamily;
+        el.style.color = layer.color;
+        el.style.letterSpacing = (layer.letterSpacing || 0) + 'px';
+
+        // 如果有子层级，渲染子层级（不设置外层 font-size/line-height 避免影响布局）
+        if (layer.children && layer.children.length > 0) {
+          const childContainer = document.createElement('div');
+          childContainer.className = 'text-layer-children';
+          
+          layer.children.forEach((child, idx) => {
+            const childEl = document.createElement('span');
+            childEl.className = 'text-layer-child';
+            childEl.textContent = child.text || '';
+            
+            // 子层级样式（继承或覆盖）
+            if (child.color) childEl.style.color = child.color;
+            if (child.fontSize) childEl.style.fontSize = child.fontSize + 'px';
+            if (child.fontWeight) childEl.style.fontWeight = child.fontWeight;
+            if (child.gap && idx > 0) childEl.style.marginLeft = child.gap + 'px';
+            
+            childContainer.appendChild(childEl);
+          });
+          
+          el.appendChild(childContainer);
+        } else {
+          // 无子层级时设置 font-size/line-height/fontWeight
+          el.style.fontSize = layer.fontSize + 'px';
+          el.style.fontWeight = layer.fontWeight;
+          el.style.lineHeight = layer.lineHeight || 1.2;
+          el.textContent = layer.text;
+        }
+      }
+
+      // 拖拽
+      let dragging = false;
+      let dragStartX = 0;
+      let dragStartY = 0;
+      let startLayerX = 0;
+      let startLayerY = 0;
+
+      el.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        selectLayer(layer.id);
+        dragging = true;
+        dragStartX = e.clientX;
+        dragStartY = e.clientY;
+        startLayerX = layer.x;
+        startLayerY = layer.y;
+        document.addEventListener('mousemove', onMouseMove);
+        document.addEventListener('mouseup', onMouseUp);
+      });
+
+      const onMouseMove = (e) => {
+        if (!dragging) return;
+        const dx = (e.clientX - dragStartX) / zoom;
+        const dy = (e.clientY - dragStartY) / zoom;
+        layer.x = Math.round(startLayerX + dx);
+        layer.y = Math.round(startLayerY + dy);
+        renderOverlay();
+        renderLayersList();
+        renderLayerEditor();
+      };
+
+      const onMouseUp = () => {
+        if (!dragging) return;
+        dragging = false;
+        document.removeEventListener('mousemove', onMouseMove);
+        document.removeEventListener('mouseup', onMouseUp);
+        
+        // 如果启用了实时 API 渲染，拖动结束后调用 API
+        if (liveApiRenderEnabled && currentImageBase64) {
+          triggerLiveApiRender();
+        }
+      };
+
+      overlay.appendChild(el);
+    });
+  }
+
+  function selectLayer(id) {
+    selectedLayerId = id;
+    selectedChildIndex = -1;
+    renderLayersList();
+    renderOverlay();
+    renderLayerEditor();
+  }
+
+  function addLayer(defaultText) {
+    if (!ensureImageLoaded()) return;
+    const layer = {
+      id: genId(),
+      text: defaultText || '新文字',
+      x: Math.round(imageWidth / 2 - 40),
+      y: Math.round(imageHeight / 2 - 8),
+      fontFamily: 'system-ui',
+      fontSize: 14,
+      color: '#ffffff',
+      fontWeight: 400,
+      letterSpacing: 0,
+      lineHeight: 1.2,
+      children: []  // 子层级数组
+    };
+    layers.push(layer);
+    selectLayer(layer.id);
+  }
+
+  function deleteLayer(id) {
+    layers = layers.filter(l => l.id !== id);
+    if (selectedLayerId === id) selectedLayerId = null;
+    renderLayersList();
+    renderOverlay();
+    renderLayerEditor();
+  }
+
+  function updateSelectedLayerFromInputs() {
+    const layer = findLayer(selectedLayerId);
+    if (!layer) return;
+    layer.text = layerTextInput.value;
+    layer.fontFamily = layerFontFamily.value;
+    layer.fontSize = parseInt(layerFontSize.value, 10) || 14;
+    layer.color = layerColor.value || '#ffffff';
+    layer.fontWeight = parseInt(layerWeight.value, 10) || 400;
+    weightDisplay.textContent = layer.fontWeight;
+    layer.letterSpacing = parseFloat(layerLetterSpacing.value) || 0;
+    layer.lineHeight = parseFloat(layerLineHeight.value) || 1.2;
+    layer.x = parseInt(layerX.value, 10) || 0;
+    layer.y = parseInt(layerY.value, 10) || 0;
+    renderOverlay();
+    renderLayersList();
+    // 触发实时 API 渲染
+    if (liveApiRenderEnabled) triggerLiveApiRender();
+  }
+
+  function updateSelectedChildFromInputs() {
+    const layer = findLayer(selectedLayerId);
+    if (!layer || !layer.children || selectedChildIndex < 0) return;
+    
+    const child = layer.children[selectedChildIndex];
+    child.text = childText.value;
+    child.gap = parseInt(childGap.value, 10) || 0;
+    child.color = childColor.value || null;
+    child.fontSize = childFontSize.value ? parseInt(childFontSize.value, 10) : null;
+    child.fontWeight = childFontWeight.value ? parseInt(childFontWeight.value, 10) : null;
+    child.dynamicColor = childDynamicColor.checked;
+    
+    renderOverlay();
+    renderChildrenList();
+    // 触发实时 API 渲染
+    if (liveApiRenderEnabled) triggerLiveApiRender();
+  }
+
+  // 添加子元素
+  addChildBtn.addEventListener('click', () => {
+    const layer = findLayer(selectedLayerId);
+    if (!layer) return;
+    
+    if (!layer.children) layer.children = [];
+    
+    layer.children.push({
+      text: '子元素',
+      gap: layer.children.length > 0 ? 4 : 0,
+      color: null,
+      fontSize: null,
+      fontWeight: null,
+      dynamicColor: false
+    });
+    
+    selectedChildIndex = layer.children.length - 1;
+    renderChildrenList();
+    renderChildEditor();
+    renderOverlay();
+  });
+
+  // 子元素属性输入事件
+  childText.addEventListener('input', updateSelectedChildFromInputs);
+  childGap.addEventListener('input', updateSelectedChildFromInputs);
+  childColor.addEventListener('input', updateSelectedChildFromInputs);
+  childFontSize.addEventListener('input', updateSelectedChildFromInputs);
+  childFontWeight.addEventListener('change', updateSelectedChildFromInputs);
+  childDynamicColor.addEventListener('change', updateSelectedChildFromInputs);
+
+  // 保存原始图片的 base64 数据（用于 API 调用）
+  let currentImageBase64 = null;
+  
+  // ==================== 实时 API 渲染功能 ====================
+  const liveApiRender = document.getElementById('liveApiRender');
+  const liveApiStatus = document.getElementById('liveApiStatus');
+  const apiRenderOverlay = document.getElementById('apiRenderOverlay');
+  let liveApiRenderEnabled = false;
+  let liveApiRenderTimeout = null;
+  
+  // 实时 API 渲染开关
+  liveApiRender.addEventListener('change', () => {
+    liveApiRenderEnabled = liveApiRender.checked;
+    if (liveApiRenderEnabled) {
+      liveApiStatus.textContent = '已启用';
+      liveApiStatus.style.color = '#21C07C';
+      overlay.style.opacity = '0.3';  // 降低本地渲染透明度
+      apiRenderOverlay.style.display = 'block';
+      // 立即触发一次渲染
+      if (currentImageBase64) {
+        triggerLiveApiRender();
+      }
+    } else {
+      liveApiStatus.textContent = '';
+      overlay.style.opacity = '1';
+      apiRenderOverlay.style.display = 'none';
+    }
+  });
+  
+  // 触发实时 API 渲染（带防抖）
+  function triggerLiveApiRender() {
+    if (!liveApiRenderEnabled || !currentImageBase64) return;
+    
+    // 清除之前的定时器
+    if (liveApiRenderTimeout) {
+      clearTimeout(liveApiRenderTimeout);
+    }
+    
+    liveApiStatus.textContent = '等待...';
+    liveApiStatus.style.color = '#ffa500';
+    
+    // 防抖：300ms 后才真正调用 API
+    liveApiRenderTimeout = setTimeout(async () => {
+      await doLiveApiRender();
+    }, 300);
+  }
+  
+  // 执行 API 渲染
+  async function doLiveApiRender() {
+    if (!currentImageBase64) return;
+    
+    liveApiStatus.textContent = '渲染中...';
+    liveApiStatus.style.color = '#4fc3f7';
+    
+    try {
+      // 准备模板数据
+      const templateData = {
+        width: imageWidth,
+        height: imageHeight,
+        customFontUrls: Array.from(loadedFontUrls),
+        layers: layers.map(l => {
+          // 二维码图层
+          if (l.type === 'qrcode') {
+            return {
+              type: 'qrcode',
+              x: l.x,
+              y: l.y,
+              width: l.width || 100,
+              height: l.height || 100
+            };
+          }
+          
+          // 文字图层
+          const layerData = {
+            text: l.text,
+            x: l.x,
+            y: l.y,
+            fontFamily: l.fontFamily,
+            fontSize: l.fontSize,
+            fontWeight: l.fontWeight,
+            color: l.color,
+            letterSpacing: l.letterSpacing || 0,
+            lineHeight: l.lineHeight || 1.2
+          };
+          if (l.children && l.children.length > 0) {
+            layerData.children = l.children;
+          }
+          return layerData;
+        }),
+        baseImage: currentImageBase64
+      };
+      
+      const startTime = Date.now();
+      const response = await fetch('http://localhost:3070/api/render', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(templateData)
+      });
+      
+      if (!response.ok) {
+        throw new Error('渲染失败');
+      }
+      
+      // 获取图片 blob 并显示
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      
+      // 释放旧的 URL
+      if (apiRenderOverlay.src && apiRenderOverlay.src.startsWith('blob:')) {
+        URL.revokeObjectURL(apiRenderOverlay.src);
+      }
+      
+      apiRenderOverlay.src = url;
+      apiRenderOverlay.style.width = imageWidth + 'px';
+      apiRenderOverlay.style.height = imageHeight + 'px';
+      
+      const elapsed = Date.now() - startTime;
+      liveApiStatus.textContent = `✓ ${elapsed}ms`;
+      liveApiStatus.style.color = '#21C07C';
+      
+    } catch (err) {
+      console.error('实时渲染失败:', err);
+      liveApiStatus.textContent = '❌ 失败';
+      liveApiStatus.style.color = '#ff6b6b';
+    }
+  }
+  
+  // 事件绑定：图片上传
+  imageInput.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    // 使用 FileReader 读取为 data URL（避免 canvas 污染问题）
+    const reader = new FileReader();
+    reader.onload = function(event) {
+      const dataUrl = event.target.result;
+      currentImageBase64 = dataUrl;  // 保存 base64 用于 API
+      
+      const img = new Image();
+      img.onload = function() {
+        currentImage = img;
+        imageWidth = img.naturalWidth;
+        imageHeight = img.naturalHeight;
+        refImg.src = dataUrl;
+        renderEditorSize();
+        addTextLayerBtn.disabled = false;
+        addQRCodeLayerBtn.disabled = false;
+        exportImageBtn.disabled = false;
+        exportViaApiBtn.disabled = false;
+        exportTemplateBtn.disabled = false;
+        // 默认 zoom 100%
+        zoom = 1;
+        zoomRange.value = 100;
+        renderZoom();
+      };
+      img.src = dataUrl;
+    };
+    reader.readAsDataURL(file);
+  });
+
+  // 透明度 / 缩放
+  opacityRange.addEventListener('input', () => {
+    const v = parseInt(opacityRange.value, 10);
+    refImg.style.opacity = v / 100;
+    opacityValue.textContent = v + '%';
+  });
+
+  zoomRange.addEventListener('input', () => {
+    const v = parseInt(zoomRange.value, 10);
+    zoom = v / 100;
+    renderZoom();
+  });
+
+  // 添加文字图层
+  addTextLayerBtn.addEventListener('click', () => {
+    addLayer('新文字');
+  });
+
+  // 添加二维码图层
+  addQRCodeLayerBtn.addEventListener('click', () => {
+    addQRCodeLayer();
+  });
+
+  // 添加二维码图层函数
+  function addQRCodeLayer() {
+    if (!ensureImageLoaded()) return;
+    const layer = {
+      id: genId(),
+      type: 'qrcode',
+      x: Math.round(imageWidth - 150),  // 默认右下角
+      y: Math.round(imageHeight - 150),
+      width: 100,
+      height: 100
+    };
+    layers.push(layer);
+    selectLayer(layer.id);
+  }
+
+  // 更新二维码图层属性
+  function updateQRCodeLayerFromInputs() {
+    const layer = findLayer(selectedLayerId);
+    if (!layer || layer.type !== 'qrcode') return;
+    layer.x = parseInt(qrcodeX.value, 10) || 0;
+    layer.y = parseInt(qrcodeY.value, 10) || 0;
+    layer.width = parseInt(qrcodeWidth.value, 10) || 100;
+    layer.height = parseInt(qrcodeHeight.value, 10) || 100;
+    renderOverlay();
+    renderLayersList();
+    // 触发实时 API 渲染
+    if (liveApiRenderEnabled) triggerLiveApiRender();
+  }
+
+  // 二维码图层属性输入事件
+  qrcodeX.addEventListener('input', updateQRCodeLayerFromInputs);
+  qrcodeY.addEventListener('input', updateQRCodeLayerFromInputs);
+  qrcodeWidth.addEventListener('input', updateQRCodeLayerFromInputs);
+  qrcodeHeight.addEventListener('input', updateQRCodeLayerFromInputs);
+  
+  // 刷新预览二维码
+  refreshQrcodeBtn.addEventListener('click', () => {
+    qrcodePreviewUrlValue = qrcodePreviewUrl.value.trim() || 'https://example.com/ref/PREVIEW';
+    renderOverlay();  // 重新渲染以更新二维码
+  });
+
+  // 图层属性输入事件
+  layerTextInput.addEventListener('input', updateSelectedLayerFromInputs);
+  layerFontFamily.addEventListener('change', updateSelectedLayerFromInputs);
+  layerFontSize.addEventListener('input', updateSelectedLayerFromInputs);
+  layerColor.addEventListener('input', updateSelectedLayerFromInputs);
+  layerWeight.addEventListener('change', updateSelectedLayerFromInputs);
+  layerLetterSpacing.addEventListener('input', updateSelectedLayerFromInputs);
+  layerLineHeight.addEventListener('input', updateSelectedLayerFromInputs);
+  layerX.addEventListener('input', updateSelectedLayerFromInputs);
+  layerY.addEventListener('input', updateSelectedLayerFromInputs);
+
+  // 加载 Google Fonts
+  loadGoogleFontBtn.addEventListener('click', async () => {
+    let url = googleFontUrl.value.trim();
+    if (!url) {
+      alert('请输入 Google Fonts 链接');
+      return;
+    }
+
+    // 验证是否是 Google Fonts URL
+    if (!url.includes('fonts.googleapis.com')) {
+      alert('请输入有效的 Google Fonts 链接');
+      return;
+    }
+
+    // 从 URL 中解析字体名称
+    const familyMatch = url.match(/family=([^&:]+)/);
+    if (!familyMatch) {
+      alert('无法从链接中解析字体名称');
+      return;
+    }
+
+    // 解码字体名称 (如 Noto+Sans+SC -> Noto Sans SC)
+    const fontName = decodeURIComponent(familyMatch[1].replace(/\+/g, ' '));
+    
+    // 自动添加可变字重支持
+    if (!url.includes('wght@')) {
+      url = url.replace(/family=([^&:]+)/, 'family=$1:wght@100..900');
+      console.log('自动添加可变字重:', url);
+    }
+
+    // 检查是否已加载
+    if (loadedFontUrls.has(url)) {
+      alert('该字体已加载');
+      layerFontFamily.value = fontName;
+      updateSelectedLayerFromInputs();
+      return;
+    }
+
+    // 动态加载字体
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = url;
+    
+    loadGoogleFontBtn.disabled = true;
+    loadGoogleFontBtn.textContent = '加载中...';
+
+    link.onload = () => {
+      loadedFontUrls.add(url);
+      
+      // 添加到下拉选项
+      let exists = false;
+      for (const opt of layerFontFamily.options) {
+        if (opt.value === fontName) {
+          exists = true;
+          break;
+        }
+      }
+      
+      if (!exists) {
+        const newOpt = document.createElement('option');
+        newOpt.value = fontName;
+        newOpt.textContent = fontName + ' (在线)';
+        layerFontFamily.appendChild(newOpt);
+      }
+
+      // 选中新字体
+      layerFontFamily.value = fontName;
+      updateSelectedLayerFromInputs();
+      
+      loadGoogleFontBtn.disabled = false;
+      loadGoogleFontBtn.textContent = '加载字体';
+      googleFontUrl.value = '';
+      
+      alert('✅ 字体加载成功: ' + fontName + '\n\n已自动添加可变字重支持 (100-900)');
+    };
+
+    link.onerror = () => {
+      loadGoogleFontBtn.disabled = false;
+      loadGoogleFontBtn.textContent = '加载字体';
+      alert('❌ 字体加载失败，请检查链接是否正确');
+    };
+
+    document.head.appendChild(link);
+  });
+
+  // 键盘方向移动
+  document.addEventListener('keydown', (e) => {
+    const layer = findLayer(selectedLayerId);
+    if (!layer) return;
+    const arrows = ['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'];
+    if (!arrows.includes(e.key)) return;
+
+    e.preventDefault();
+    const step = e.shiftKey ? 10 : 1;
+    switch (e.key) {
+      case 'ArrowUp':
+        layer.y -= step;
+        break;
+      case 'ArrowDown':
+        layer.y += step;
+        break;
+      case 'ArrowLeft':
+        layer.x -= step;
+        break;
+      case 'ArrowRight':
+        layer.x += step;
+        break;
+    }
+    renderOverlay();
+    renderLayersList();
+    renderLayerEditor();
+    // 触发实时 API 渲染
+    if (liveApiRenderEnabled) triggerLiveApiRender();
+  });
+
+  // 导出模板 - 兼容旧格式，如果没有 children 则不导出
+  exportTemplateBtn.addEventListener('click', () => {
+    if (!ensureImageLoaded()) return;
+    const tpl = {
+      width: imageWidth,
+      height: imageHeight,
+      customFontUrls: Array.from(loadedFontUrls),
+      layers: layers.map(l => {
+        // 二维码图层
+        if (l.type === 'qrcode') {
+          return {
+            id: l.id,
+            type: 'qrcode',
+            x: l.x,
+            y: l.y,
+            width: l.width || 100,
+            height: l.height || 100
+          };
+        }
+        
+        // 文字图层
+        const layerData = {
+          id: l.id,
+          text: l.text,
+          x: l.x,
+          y: l.y,
+          fontFamily: l.fontFamily,
+          fontSize: l.fontSize,
+          color: l.color,
+          fontWeight: l.fontWeight,
+          letterSpacing: l.letterSpacing || 0,
+          lineHeight: l.lineHeight || 1.2
+        };
+        
+        // 只有在有子层级时才导出 children
+        if (l.children && l.children.length > 0) {
+          layerData.children = l.children.map(c => {
+            const childData = { text: c.text };
+            if (c.gap) childData.gap = c.gap;
+            if (c.color) childData.color = c.color;
+            if (c.fontSize) childData.fontSize = c.fontSize;
+            if (c.fontWeight) childData.fontWeight = c.fontWeight;
+            if (c.dynamicColor) childData.dynamicColor = c.dynamicColor;
+            return childData;
+          });
+        }
+        
+        return layerData;
+      })
+    };
+    templateJsonArea.value = JSON.stringify(tpl, null, 2);
+  });
+
+  // 导入模板
+  importTemplateBtn.addEventListener('click', () => {
+    let txt = templateJsonArea.value.trim();
+    if (!txt) {
+      alert('请先在文本框中粘贴模板 JSON');
+      return;
+    }
+    try {
+      const tpl = JSON.parse(txt);
+      if (!tpl.width || !tpl.height || !Array.isArray(tpl.layers)) {
+        alert('JSON 结构不合法');
+        return;
+      }
+      if (!ensureImageLoaded()) {
+        alert('请先上传一张参考图（尺寸最好与模板一致）');
+        return;
+      }
+      imageWidth = tpl.width;
+      imageHeight = tpl.height;
+      renderEditorSize();
+      layers = tpl.layers.map(l => {
+        // 二维码图层
+        if (l.type === 'qrcode') {
+          return {
+            id: l.id || genId(),
+            type: 'qrcode',
+            x: l.x || 0,
+            y: l.y || 0,
+            width: l.width || 100,
+            height: l.height || 100
+          };
+        }
+        
+        // 文字图层 - 兼容旧模板的 normal/bold
+        let weight = l.fontWeight;
+        if (weight === 'normal') weight = 400;
+        else if (weight === 'bold') weight = 700;
+        else weight = parseInt(weight, 10) || 400;
+        
+        return {
+          id: l.id || genId(),
+          text: l.text || '',
+          x: l.x || 0,
+          y: l.y || 0,
+          fontFamily: l.fontFamily || 'system-ui',
+          fontSize: l.fontSize || 14,
+          color: l.color || '#ffffff',
+          fontWeight: weight,
+          letterSpacing: l.letterSpacing || 0,
+          lineHeight: l.lineHeight || 1.2,
+          children: l.children || []  // 支持子层级
+        };
+      });
+      
+      // 如果模板包含自定义字体 URL，加载它们
+      if (Array.isArray(tpl.customFontUrls)) {
+        tpl.customFontUrls.forEach(url => {
+          if (url && !loadedFontUrls.has(url)) {
+            const link = document.createElement('link');
+            link.rel = 'stylesheet';
+            link.href = url;
+            document.head.appendChild(link);
+            loadedFontUrls.add(url);
+          }
+        });
+      }
+      selectedLayerId = layers[0]?.id || null;
+      renderLayersList();
+      renderOverlay();
+      renderLayerEditor();
+    } catch (err) {
+      console.error(err);
+      alert('解析 JSON 失败：' + err.message);
+    }
+  });
+
+  // 生成图层 HTML（支持子层级）
+  function generateLayerHTML(layer) {
+    const baseStyle = `
+      position: absolute;
+      left: ${layer.x}px;
+      top: ${layer.y}px;
+      font-family: ${layer.fontFamily};
+      font-size: ${layer.fontSize}px;
+      font-weight: ${layer.fontWeight};
+      color: ${layer.color};
+      letter-spacing: ${layer.letterSpacing || 0}px;
+      line-height: ${layer.lineHeight || 1.2};
+      white-space: pre;
+      user-select: none;
+      text-shadow: 0 0 1px rgba(0,0,0,.8);
+    `;
+    
+    if (layer.children && layer.children.length > 0) {
+      // 有子层级，渲染为 flex 容器
+      let childrenHTML = '';
+      layer.children.forEach((child, idx) => {
+        let childStyle = '';
+        if (child.color) childStyle += `color: ${child.color};`;
+        if (child.fontSize) childStyle += `font-size: ${child.fontSize}px;`;
+        if (child.fontWeight) childStyle += `font-weight: ${child.fontWeight};`;
+        if (child.gap && idx > 0) childStyle += `margin-left: ${child.gap}px;`;
+        
+        const text = (child.text || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        childrenHTML += `<span style="${childStyle}">${text}</span>`;
+      });
+      
+      return `<div style="${baseStyle}"><div style="display:flex;flex-direction:row;align-items:baseline;">${childrenHTML}</div></div>`;
+    } else {
+      // 无子层级，直接渲染文本
+      const text = (layer.text || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      return `<div style="${baseStyle}">${text}</div>`;
+    }
+  }
+
+  // 导出图片 - 创建独立渲染容器，确保与预览位置完全一致
+  exportImageBtn.addEventListener('click', async () => {
+    if (!ensureImageLoaded()) return;
+    
+    exportImageBtn.disabled = true;
+    exportImageBtn.textContent = '生成中...';
+    
+    try {
+      // 等待字体完全加载
+      await document.fonts.ready;
+      
+      // 生成自定义字体的 CSS
+      const fontImports = loadedFontUrls.size > 0 
+        ? Array.from(loadedFontUrls).map(url => `@import url('${url}');`).join('\n')
+        : '';
+      
+      // 生成文字图层 HTML（支持子层级）
+      let layersHTML = '';
+      layers.forEach(l => {
+        layersHTML += generateLayerHTML(l);
+      });
+      
+      // 创建独立的渲染容器
+      const renderContainer = document.createElement('div');
+      renderContainer.id = 'exportContainer';
+      renderContainer.style.cssText = `
+        position: fixed;
+        left: -9999px;
+        top: 0;
+        width: ${imageWidth}px;
+        height: ${imageHeight}px;
+        overflow: hidden;
+        z-index: -9999;
+      `;
+      
+      // 内部渲染区域
+      const innerDiv = document.createElement('div');
+      innerDiv.style.cssText = `position: relative; width: ${imageWidth}px; height: ${imageHeight}px; background: #000;`;
+      innerDiv.innerHTML = `
+        <style>${fontImports}</style>
+        <img src="${refImg.src}" style="position: absolute; left: 0; top: 0; width: ${imageWidth}px; height: ${imageHeight}px;" />
+        <div style="position: absolute; left: 0; top: 0; width: ${imageWidth}px; height: ${imageHeight}px;">
+          ${layersHTML}
+        </div>
+      `;
+      
+      renderContainer.appendChild(innerDiv);
+      document.body.appendChild(renderContainer);
+      
+      // 等待渲染
+      await new Promise(r => setTimeout(r, 800));
+      await document.fonts.ready;
+      
+      // 使用 html2canvas 截取
+      const canvas = await html2canvas(innerDiv, {
+        width: imageWidth,
+        height: imageHeight,
+        scale: 1,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: '#000',
+        logging: false
+      });
+      
+      // 清理
+      document.body.removeChild(renderContainer);
+      
+      // 下载
+      const dataURL = canvas.toDataURL('image/png');
+      const a = document.createElement('a');
+      a.href = dataURL;
+      a.download = 'contract-mock.png';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      
+      console.log('✅ 导出成功');
+      
+    } catch (err) {
+      console.error('导出失败:', err);
+      alert('导出失败: ' + err.message);
+    } finally {
+      exportImageBtn.disabled = false;
+      exportImageBtn.textContent = '生成晒单 PNG';
+    }
+  });
+
+  // 使用后端 API 生成图片（与接口效果完全一致）
+  exportViaApiBtn.addEventListener('click', async () => {
+    if (!ensureImageLoaded()) return;
+    
+    exportViaApiBtn.disabled = true;
+    exportViaApiBtn.textContent = '生成中...';
+    
+    try {
+      // 使用保存的 base64 图片数据
+      if (!currentImageBase64) {
+        alert('请先上传图片');
+        return;
+      }
+      
+      console.log('底图前缀:', currentImageBase64.substring(0, 50));
+      console.log('底图长度:', currentImageBase64.length);
+      
+      // 准备模板数据 - 转换为兼容格式
+      const templateData = {
+        width: imageWidth,
+        height: imageHeight,
+        customFontUrls: Array.from(loadedFontUrls),
+        layers: layers.map(l => {
+          const layerData = {
+            text: l.text,
+            x: l.x,
+            y: l.y,
+            fontFamily: l.fontFamily,
+            fontSize: l.fontSize,
+            fontWeight: l.fontWeight,
+            color: l.color,
+            letterSpacing: l.letterSpacing || 0,
+            lineHeight: l.lineHeight || 1.2
+          };
+          
+          // 包含子层级
+          if (l.children && l.children.length > 0) {
+            layerData.children = l.children;
+          }
+          
+          return layerData;
+        }),
+        baseImage: currentImageBase64  // 传递 base64 图片
+      };
+      
+      // 调用后端 API
+      const response = await fetch('http://localhost:3070/api/render', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(templateData)
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || '生成失败');
+      }
+      
+      // 下载图片
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'contract-mock-api.png';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+      console.log('✅ API 导出成功');
+      
+    } catch (err) {
+      console.error('API 导出失败:', err);
+      alert('API 导出失败: ' + err.message + '\n\n请确保后端服务已启动 (node server.js)');
+    } finally {
+      exportViaApiBtn.disabled = false;
+      exportViaApiBtn.textContent = '🔗 API生成';
+    }
+  });
+
+  // 简单盈亏计算
+  calcBtn.addEventListener('click', () => {
+    const direction = directionEl.value; // long / short
+    const leverage = parseFloat(leverageEl.value) || 1;
+    const entry = parseFloat(entryPriceEl.value);
+    const exit = parseFloat(exitPriceEl.value);
+    const qty = parseFloat(quantityEl.value);
+    const cSize = parseFloat(contractSizeEl.value) || 1;
+
+    if (!(entry > 0 && exit > 0 && qty > 0 && leverage > 0)) {
+      calcResult.textContent = '请填写有效的价格/数量/杠杆';
+      return;
+    }
+
+    const dir = direction === 'long' ? 1 : -1;
+    const pnl = (exit - entry) * qty * cSize * dir;
+    const notional = entry * qty * cSize;
+    const margin = notional / leverage;
+    const roe = margin > 0 ? (pnl / margin) * 100 : 0;
+
+    const pnlStr = pnl.toFixed(2);
+    const roeStr = roe.toFixed(2);
+
+    calcResult.innerHTML =
+      `盈亏：<b>${pnlStr}</b> USDT<br>` +
+      `ROE：<b>${roeStr}%</b><br>` +
+      `名义价值：${notional.toFixed(2)} USDT<br>` +
+      `保证金（约）：${margin.toFixed(2)} USDT`;
+
+    // 示例：你可以在这里做变量替换，更新某个图层内容
+    // 比如，把所有 {{pnl}} 替换成实际数值：
+    layers.forEach(l => {
+      if (l.text && l.text.includes('{{pnl}}')) {
+        l.text = l.text.replace(/{{pnl}}/g, pnlStr);
+      }
+      if (l.text && l.text.includes('{{roe}}')) {
+        l.text = l.text.replace(/{{roe}}/g, roeStr);
+      }
+    });
+    renderOverlay();
+    renderLayersList();
+  });
+
+  // ==================== API 实时预览功能 ====================
+  const apiServer = document.getElementById('apiServer');
+  const apiExchange = document.getElementById('apiExchange');
+  const apiTradepair = document.getElementById('apiTradepair');
+  const apiOpendate = document.getElementById('apiOpendate');
+  const apiDate = document.getElementById('apiDate');
+  const apiDirection = document.getElementById('apiDirection');
+  const apiLev = document.getElementById('apiLev');
+  const apiTimezone = document.getElementById('apiTimezone');
+  const apiDynamicColor = document.getElementById('apiDynamicColor');
+  const apiPreviewBtn = document.getElementById('apiPreviewBtn');
+  const apiFillTimeBtn = document.getElementById('apiFillTimeBtn');
+  const apiPreviewResult = document.getElementById('apiPreviewResult');
+  const apiPreviewImage = document.getElementById('apiPreviewImage');
+  const apiResultImg = document.getElementById('apiResultImg');
+  const apiDownloadBtn = document.getElementById('apiDownloadBtn');
+
+  let lastApiImageUrl = null;
+
+  // 填充时间按钮
+  apiFillTimeBtn.addEventListener('click', () => {
+    const now = new Date();
+    const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    
+    const formatDT = (d) => {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      const h = String(d.getHours()).padStart(2, '0');
+      const min = String(d.getMinutes()).padStart(2, '0');
+      return `${y}-${m}-${day} ${h}:${min}`;
+    };
+    
+    apiOpendate.value = formatDT(yesterday);
+    apiDate.value = formatDT(now);
+  });
+
+  // 初始化时填充时间
+  apiFillTimeBtn.click();
+
+  // API 实时预览
+  apiPreviewBtn.addEventListener('click', async () => {
+    const server = apiServer.value.trim();
+    const ex = apiExchange.value;
+    const tradepair = apiTradepair.value.trim();
+    const opendate = apiOpendate.value.trim();
+    const date = apiDate.value.trim();
+    const direction = apiDirection.value;
+    const lev = apiLev.value;
+    const timezone = apiTimezone.value;
+    const dynamicColor = apiDynamicColor.checked;
+
+    if (!tradepair || !opendate || !date) {
+      apiPreviewResult.innerHTML = '<span style="color:#ff6b6b;">❌ 请填写交易对、开仓时间、显示时间</span>';
+      return;
+    }
+
+    apiPreviewBtn.disabled = true;
+    apiPreviewBtn.textContent = '⏳ 加载中...';
+    apiPreviewResult.innerHTML = '<span style="color:#4fc3f7;">🔄 正在调用 API...</span>';
+    apiPreviewImage.style.display = 'none';
+
+    try {
+      // 构建 URL
+      const params = new URLSearchParams();
+      params.set('ex', ex);
+      params.set('tradepair', tradepair);
+      params.set('opendate', opendate);
+      params.set('date', date);
+      params.set('direction', direction);
+      params.set('lev', lev);
+      if (timezone !== '+8') params.set('timezone', timezone);
+      if (dynamicColor) params.set('dynamic_direction_color', 'true');
+
+      const url = `${server}/api/generate?${params.toString()}`;
+      console.log('API 请求:', url);
+
+      const startTime = Date.now();
+      const response = await fetch(url, {
+        headers: { 'ngrok-skip-browser-warning': 'true' }
+      });
+
+      const elapsed = Date.now() - startTime;
+      const result = await response.json();
+
+      if (result.success && result.data?.image) {
+        // 成功
+        lastApiImageUrl = result.data.image;
+        apiResultImg.src = result.data.image;
+        apiPreviewImage.style.display = 'block';
+        
+        const info = result.tradeInfo || {};
+        apiPreviewResult.innerHTML = `
+          <span style="color:#21C07C;">✅ 生成成功 (${elapsed}ms)</span><br>
+          <span style="color:#aaa;">
+            ${info.direction || ''} | ${info.leverage || lev}x | 收益: ${info.yield || '-'}
+          </span>
+        `;
+      } else {
+        // 失败
+        apiPreviewResult.innerHTML = `<span style="color:#ff6b6b;">❌ ${result.message || result.error || '生成失败'}</span>`;
+        apiPreviewImage.style.display = 'none';
+      }
+
+    } catch (err) {
+      console.error('API 请求失败:', err);
+      apiPreviewResult.innerHTML = `<span style="color:#ff6b6b;">❌ 请求失败: ${err.message}<br>请确保 API 服务已启动</span>`;
+      apiPreviewImage.style.display = 'none';
+    } finally {
+      apiPreviewBtn.disabled = false;
+      apiPreviewBtn.textContent = '🔄 实时预览';
+    }
+  });
+
+  // 下载 API 生成的图片
+  apiDownloadBtn.addEventListener('click', () => {
+    if (!lastApiImageUrl) return;
+    
+    const a = document.createElement('a');
+    a.href = lastApiImageUrl;
+    a.download = `${apiTradepair.value}-${apiExchange.value}-${Date.now()}.png`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  });
+
+  // 监听交易所切换，自动刷新预览
+  apiExchange.addEventListener('change', () => {
+    // 可选：自动触发预览
+    // apiPreviewBtn.click();
+  });
+
+})();
+</script>
+</body>
+</html>
