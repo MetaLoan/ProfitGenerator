@@ -16,9 +16,15 @@
 ### 🐧 Ubuntu 一键部署（推荐）
 
 ```bash
-# 最新版本 v1.1（支持 Ubuntu 22.04 / 24.04）
-curl -fsSL https://raw.githubusercontent.com/MetaLoan/ProfitGenerator/main/deploy-ubuntu-v1.1.sh | bash
+# 最新版本 v1.2（支持 Ubuntu 20.04 / 22.04 / 24.04）
+curl -fsSL https://raw.githubusercontent.com/MetaLoan/ProfitGenerator/main/deploy-ubuntu-v1.2.sh | bash
 ```
+
+**v1.2 优化内容：**
+- ✅ 自动配置 2GB swap 防止 OOM
+- ✅ 自动配置 setcap 让 Node.js 监听 80 端口
+- ✅ 优化 systemd 服务配置
+- ✅ 等待服务就绪后再显示结果
 
 部署完成后会自动显示公网 API 地址，服务会开机自启。
 
