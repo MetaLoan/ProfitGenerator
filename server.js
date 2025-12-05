@@ -16,15 +16,11 @@ app.use('/fonts', express.static(path.join(__dirname, 'fonts')));
 const FONTS_DIR = path.join(__dirname, 'fonts');
 
 // 生成 base64 字体 CSS（用于 Playwright 渲染）
+// 注意：只加载常用字重以节省内存
 function generateBase64FontCSS() {
   const fontWeights = [
-    { weight: 100, file: 'HarmonyOS_SansSC_Thin.ttf' },
-    { weight: 300, file: 'HarmonyOS_SansSC_Light.ttf' },
     { weight: 400, file: 'HarmonyOS_SansSC_Regular.ttf' },
-    { weight: 500, file: 'HarmonyOS_SansSC_Medium.ttf' },
-    { weight: 600, file: 'HarmonyOS_SansSC_Semibold.ttf' },
     { weight: 700, file: 'HarmonyOS_SansSC_Bold.ttf' },
-    { weight: 900, file: 'HarmonyOS_SansSC_Black.ttf' },
   ];
   
   let css = '/* HarmonyOS Sans SC - Base64 Embedded */\n';
