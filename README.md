@@ -16,7 +16,8 @@
 ### 🐧 Ubuntu 一键部署（推荐）
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/MetaLoan/ProfitGenerator/main/deploy-ubuntu.sh | bash
+# 最新版本 v1.1（支持 Ubuntu 22.04 / 24.04）
+curl -fsSL https://raw.githubusercontent.com/MetaLoan/ProfitGenerator/main/deploy-ubuntu-v1.1.sh | bash
 ```
 
 部署完成后会自动显示公网 API 地址，服务会开机自启。
