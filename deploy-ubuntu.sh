@@ -72,26 +72,36 @@ install_dependencies() {
     echo -e "\n${BLUE}📦 步骤 2/6: 安装系统依赖...${NC}"
     
     sudo apt-get update
-    sudo apt-get install -y \
-        git \
-        curl \
-        wget \
-        unzip \
-        libnss3 \
-        libatk1.0-0 \
-        libatk-bridge2.0-0 \
-        libcups2 \
-        libdrm2 \
-        libxkbcommon0 \
-        libxcomposite1 \
-        libxdamage1 \
-        libxfixes3 \
-        libxrandr2 \
-        libgbm1 \
-        libasound2 \
-        libpango-1.0-0 \
-        libcairo2 \
-        libatspi2.0-0
+    
+    # 基础依赖
+    sudo apt-get install -y git curl wget unzip
+    
+    # Playwright 依赖 - 兼容 Ubuntu 22.04 和 24.04
+    # Ubuntu 24.04 中部分包名带 t64 后缀
+    PACKAGES=(
+        libnss3
+        libxkbcommon0
+        libxcomposite1
+        libxdamage1
+        libxfixes3
+        libxrandr2
+        libgbm1
+        libpango-1.0-0
+        libcairo2
+    )
+    
+    # 尝试安装，忽略不存在的包
+    for pkg in "${PACKAGES[@]}"; do
+        sudo apt-get install -y "$pkg" 2>/dev/null || true
+    done
+    
+    # 带 t64 后缀的包（Ubuntu 24.04）或原名（旧版本）
+    sudo apt-get install -y libasound2t64 2>/dev/null || sudo apt-get install -y libasound2 2>/dev/null || true
+    sudo apt-get install -y libatk1.0-0t64 2>/dev/null || sudo apt-get install -y libatk1.0-0 2>/dev/null || true
+    sudo apt-get install -y libatk-bridge2.0-0t64 2>/dev/null || sudo apt-get install -y libatk-bridge2.0-0 2>/dev/null || true
+    sudo apt-get install -y libcups2t64 2>/dev/null || sudo apt-get install -y libcups2 2>/dev/null || true
+    sudo apt-get install -y libdrm2 2>/dev/null || true
+    sudo apt-get install -y libatspi2.0-0t64 2>/dev/null || sudo apt-get install -y libatspi2.0-0 2>/dev/null || true
     
     echo -e "${GREEN}   ✅ 系统依赖安装完成${NC}"
 }
