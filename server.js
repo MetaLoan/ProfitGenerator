@@ -7,7 +7,7 @@ const fs = require('fs');
 const QRCode = require('qrcode');
 
 const app = express();
-const PORT = 3070;
+const PORT = process.env.PORT || 80;
 
 // 静态文件服务 - 字体文件
 app.use('/fonts', express.static(path.join(__dirname, 'fonts')));

@@ -29,7 +29,7 @@ NC='\033[0m' # No Color
 # 配置
 REPO_URL="https://github.com/MetaLoan/ProfitGenerator.git"
 INSTALL_DIR="$HOME/ProfitGenerator"
-PORT=3070
+PORT=80
 SERVICE_NAME="profit-generator"
 
 echo -e "${CYAN}"
