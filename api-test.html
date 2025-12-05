@@ -685,7 +685,9 @@
           <button class="btn-quick" onclick="fillQuick('week')">一周前</button>
           <button class="btn-quick" onclick="fillQuick('month')">一月前</button>
           <button class="btn-quick" onclick="fillQuick('random')">随机参数</button>
+          <button class="btn-quick" onclick="clearCache()" style="background: var(--accent-red); color: #fff; border-color: var(--accent-red);">🗑️ 清除缓存</button>
         </div>
+        <div class="param-hint" style="margin-top: 8px;">💾 参数会自动保存，下次打开自动恢复</div>
       </div>
       
       <!-- API 参数说明 -->
@@ -814,11 +816,71 @@
     // 状态
     let currentResult = null;
     let currentTab = 'image';
+    const CACHE_KEY = 'api_test_params_v1';
     
-    // 初始化：设置默认时间
+    // 初始化：恢复缓存或设置默认时间
     window.addEventListener('DOMContentLoaded', () => {
-      fillQuick('yesterday');
+      if (!loadCachedParams()) {
+        fillQuick('yesterday');
+      }
     });
+    
+    // 保存参数到 localStorage
+    function saveParams() {
+      const params = {
+        serverUrl: document.getElementById('serverUrl').value,
+        ex: document.getElementById('ex').value,
+        tradepair: document.getElementById('tradepair').value,
+        opendate: document.getElementById('opendate').value,
+        date: document.getElementById('date').value,
+        direction: document.getElementById('direction').value,
+        lev: document.getElementById('lev').value,
+        direction_action: document.getElementById('direction_action').value,
+        timezone: document.getElementById('timezone').value,
+        dynamic_direction_color: document.getElementById('dynamic_direction_color').checked,
+        refcode: document.getElementById('refcode').value,
+        savedAt: new Date().toISOString()
+      };
+      localStorage.setItem(CACHE_KEY, JSON.stringify(params));
+    }
+    
+    // 从 localStorage 加载参数
+    function loadCachedParams() {
+      try {
+        const cached = localStorage.getItem(CACHE_KEY);
+        if (!cached) return false;
+        
+        const params = JSON.parse(cached);
+        
+        // 恢复各字段
+        if (params.serverUrl) document.getElementById('serverUrl').value = params.serverUrl;
+        if (params.ex) document.getElementById('ex').value = params.ex;
+        if (params.tradepair) document.getElementById('tradepair').value = params.tradepair;
+        if (params.opendate) document.getElementById('opendate').value = params.opendate;
+        if (params.date) document.getElementById('date').value = params.date;
+        if (params.direction) document.getElementById('direction').value = params.direction;
+        if (params.lev) document.getElementById('lev').value = params.lev;
+        if (params.direction_action) document.getElementById('direction_action').value = params.direction_action;
+        if (params.timezone) document.getElementById('timezone').value = params.timezone;
+        if (params.dynamic_direction_color !== undefined) {
+          document.getElementById('dynamic_direction_color').checked = params.dynamic_direction_color;
+        }
+        if (params.refcode) document.getElementById('refcode').value = params.refcode;
+        
+        console.log('✅ 已恢复上次参数，保存于:', params.savedAt);
+        return true;
+      } catch (e) {
+        console.warn('加载缓存参数失败:', e);
+        return false;
+      }
+    }
+    
+    // 清除缓存
+    function clearCache() {
+      localStorage.removeItem(CACHE_KEY);
+      fillQuick('yesterday');
+      alert('✅ 已清除缓存，参数已重置');
+    }
     
     // 快捷填充
     function fillQuick(type) {
@@ -887,6 +949,9 @@
         alert('请填写必填参数：交易对、开仓时间、显示时间');
         return;
       }
+      
+      // 保存参数到缓存
+      saveParams();
       
       // 构建 URL
       const urlParams = new URLSearchParams();
@@ -1055,6 +1120,27 @@
         generateImage();
       }
     });
+    
+    // 自动保存：监听输入变化
+    const inputIds = ['serverUrl', 'ex', 'tradepair', 'opendate', 'date', 'direction', 'lev', 'direction_action', 'timezone', 'dynamic_direction_color', 'refcode'];
+    inputIds.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.addEventListener('change', saveParams);
+        if (el.type === 'text' || el.type === 'number') {
+          el.addEventListener('input', debounce(saveParams, 500));
+        }
+      }
+    });
+    
+    // 防抖函数
+    function debounce(fn, delay) {
+      let timer;
+      return function(...args) {
+        clearTimeout(timer);
+        timer = setTimeout(() => fn.apply(this, args), delay);
+      };
+    }
     
     // 切换参数文档显示
     function toggleDocs() {
