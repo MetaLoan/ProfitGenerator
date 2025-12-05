@@ -13,26 +13,36 @@
 
 ## 📦 快速部署
 
-### 1. 克隆仓库
+### 🐧 Ubuntu 一键部署（推荐）
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/MetaLoan/ProfitGenerator/main/deploy-ubuntu.sh | bash
+```
+
+部署完成后会自动显示公网 API 地址，服务会开机自启。
+
+### 手动部署
+
+#### 1. 克隆仓库
 
 ```bash
 git clone https://github.com/MetaLoan/ProfitGenerator.git
 cd ProfitGenerator
 ```
 
-### 2. 安装依赖
+#### 2. 安装依赖
 
 ```bash
 npm install
 ```
 
-### 3. 安装 Playwright 浏览器
+#### 3. 安装 Playwright 浏览器
 
 ```bash
 npx playwright install chromium
 ```
 
-### 4. 启动服务
+#### 4. 启动服务
 
 ```bash
 node server.js
