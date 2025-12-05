@@ -18,13 +18,11 @@ Thumbs.db
 # 运行时
 *.pid
 
-# 字体文件（需单独下载）
-fonts/*.ttf
-fonts/*.otf
-fonts/*.woff
-fonts/*.woff2
-!fonts/harmonyos-sans.css
-!fonts/download-fonts.sh
+# 字体文件（HarmonyOS Sans SC 已包含）
+# fonts/*.ttf
+# fonts/*.otf
+# fonts/*.woff
+# fonts/*.woff2
 
 # 临时文件
 *.tmp

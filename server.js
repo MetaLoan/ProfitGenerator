@@ -612,12 +612,12 @@ function generateRenderHTML(exchangeConfig, data, isProfit, backgroundImagePath,
   <link rel="stylesheet" href="https://s1.hdslb.com/bfs/static/jinkela/long/font/regular.css">
   <style>
     /* HarmonyOS Sans SC 本地字体定义 - 全字重 */
-    @font-face { font-family: 'HarmonyOS Sans SC'; src: url('/fonts/HarmonyOS_Sans_SC_Thin.ttf') format('truetype'); font-weight: 100; font-display: swap; }
-    @font-face { font-family: 'HarmonyOS Sans SC'; src: url('/fonts/HarmonyOS_Sans_SC_Light.ttf') format('truetype'); font-weight: 300; font-display: swap; }
-    @font-face { font-family: 'HarmonyOS Sans SC'; src: url('/fonts/HarmonyOS_Sans_SC_Regular.ttf') format('truetype'); font-weight: 400; font-display: swap; }
-    @font-face { font-family: 'HarmonyOS Sans SC'; src: url('/fonts/HarmonyOS_Sans_SC_Medium.ttf') format('truetype'); font-weight: 500; font-display: swap; }
-    @font-face { font-family: 'HarmonyOS Sans SC'; src: url('/fonts/HarmonyOS_Sans_SC_Bold.ttf') format('truetype'); font-weight: 700; font-display: swap; }
-    @font-face { font-family: 'HarmonyOS Sans SC'; src: url('/fonts/HarmonyOS_Sans_SC_Black.ttf') format('truetype'); font-weight: 900; font-display: swap; }
+    @font-face { font-family: 'HarmonyOS Sans SC'; src: url('/fonts/HarmonyOS_SansSC_Thin.ttf') format('truetype'); font-weight: 100; font-display: swap; }
+    @font-face { font-family: 'HarmonyOS Sans SC'; src: url('/fonts/HarmonyOS_SansSC_Light.ttf') format('truetype'); font-weight: 300; font-display: swap; }
+    @font-face { font-family: 'HarmonyOS Sans SC'; src: url('/fonts/HarmonyOS_SansSC_Regular.ttf') format('truetype'); font-weight: 400; font-display: swap; }
+    @font-face { font-family: 'HarmonyOS Sans SC'; src: url('/fonts/HarmonyOS_SansSC_Medium.ttf') format('truetype'); font-weight: 500; font-display: swap; }
+    @font-face { font-family: 'HarmonyOS Sans SC'; src: url('/fonts/HarmonyOS_SansSC_Bold.ttf') format('truetype'); font-weight: 700; font-display: swap; }
+    @font-face { font-family: 'HarmonyOS Sans SC'; src: url('/fonts/HarmonyOS_SansSC_Black.ttf') format('truetype'); font-weight: 900; font-display: swap; }
     
     ${fontImports}
     
@@ -950,12 +950,12 @@ app.post('/api/render', async (req, res) => {
   <link rel="stylesheet" href="https://s1.hdslb.com/bfs/static/jinkela/long/font/regular.css">
   <style>
     /* HarmonyOS Sans SC 本地字体定义 - 全字重 */
-    @font-face { font-family: 'HarmonyOS Sans SC'; src: url('/fonts/HarmonyOS_Sans_SC_Thin.ttf') format('truetype'); font-weight: 100; font-display: swap; }
-    @font-face { font-family: 'HarmonyOS Sans SC'; src: url('/fonts/HarmonyOS_Sans_SC_Light.ttf') format('truetype'); font-weight: 300; font-display: swap; }
-    @font-face { font-family: 'HarmonyOS Sans SC'; src: url('/fonts/HarmonyOS_Sans_SC_Regular.ttf') format('truetype'); font-weight: 400; font-display: swap; }
-    @font-face { font-family: 'HarmonyOS Sans SC'; src: url('/fonts/HarmonyOS_Sans_SC_Medium.ttf') format('truetype'); font-weight: 500; font-display: swap; }
-    @font-face { font-family: 'HarmonyOS Sans SC'; src: url('/fonts/HarmonyOS_Sans_SC_Bold.ttf') format('truetype'); font-weight: 700; font-display: swap; }
-    @font-face { font-family: 'HarmonyOS Sans SC'; src: url('/fonts/HarmonyOS_Sans_SC_Black.ttf') format('truetype'); font-weight: 900; font-display: swap; }
+    @font-face { font-family: 'HarmonyOS Sans SC'; src: url('/fonts/HarmonyOS_SansSC_Thin.ttf') format('truetype'); font-weight: 100; font-display: swap; }
+    @font-face { font-family: 'HarmonyOS Sans SC'; src: url('/fonts/HarmonyOS_SansSC_Light.ttf') format('truetype'); font-weight: 300; font-display: swap; }
+    @font-face { font-family: 'HarmonyOS Sans SC'; src: url('/fonts/HarmonyOS_SansSC_Regular.ttf') format('truetype'); font-weight: 400; font-display: swap; }
+    @font-face { font-family: 'HarmonyOS Sans SC'; src: url('/fonts/HarmonyOS_SansSC_Medium.ttf') format('truetype'); font-weight: 500; font-display: swap; }
+    @font-face { font-family: 'HarmonyOS Sans SC'; src: url('/fonts/HarmonyOS_SansSC_Bold.ttf') format('truetype'); font-weight: 700; font-display: swap; }
+    @font-face { font-family: 'HarmonyOS Sans SC'; src: url('/fonts/HarmonyOS_SansSC_Black.ttf') format('truetype'); font-weight: 900; font-display: swap; }
     
     ${fontImports}
     * { margin: 0; padding: 0; box-sizing: border-box; }
