@@ -904,14 +904,14 @@ async function generateImage(exchangeConfig, data, isProfit, backgroundImagePath
       
       page = await context.newPage();
       
-      // 加载 HTML
-      await page.setContent(html, { waitUntil: 'networkidle' });
+      // 加载 HTML（使用 domcontentloaded 更快）
+      await page.setContent(html, { waitUntil: 'domcontentloaded' });
       
       // 等待字体加载
       await page.evaluate(() => document.fonts.ready);
       
-      // 额外等待确保渲染完成
-      await page.waitForTimeout(800);
+      // 等待渲染完成（减少等待时间）
+      await page.waitForTimeout(300);
       
       // 截图
       const screenshot = await page.screenshot({
@@ -1117,7 +1117,7 @@ app.post('/api/render', async (req, res) => {
       }, { timeout: 10000 });
       
       await page.evaluate(() => document.fonts.ready);
-      await page.waitForTimeout(500);
+      await page.waitForTimeout(200);
       
       console.log('   ✅ 页面渲染完成');
       
@@ -1294,7 +1294,10 @@ app.get('/api/generate', async (req, res) => {
     };
     
     // 生成图片
+    const startTime = Date.now();
     const imageBuffer = await generateImage(exchangeConfig, drawData, isProfit, backgroundImagePath, generateOptions);
+    const renderTime = Date.now() - startTime;
+    console.log(`   ⚡ 图片生成耗时: ${renderTime}ms`);
     
     // 转换为 base64
     const base64Image = imageBuffer.toString('base64');
