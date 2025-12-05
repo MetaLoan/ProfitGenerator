@@ -1428,10 +1428,10 @@ app.get('/', (req, res) => {
   `);
 });
 
-// 启动服务器
-app.listen(PORT, async () => {
+// 启动服务器 - 监听所有网络接口
+app.listen(PORT, '0.0.0.0', async () => {
   console.log(`\n🚀 加密货币晒单收益模拟 API 已启动`);
-  console.log(`   地址: http://localhost:${PORT}`);
+  console.log(`   地址: http://0.0.0.0:${PORT}`);
   console.log(`   使用 Playwright 渲染，支持 Google Fonts`);
   console.log(`   默认交易所: ${DEFAULT_EXCHANGE}\n`);
   
