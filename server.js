@@ -12,6 +12,50 @@ const PORT = process.env.PORT || 80;
 // 静态文件服务 - 字体文件
 app.use('/fonts', express.static(path.join(__dirname, 'fonts')));
 
+// 字体目录
+const FONTS_DIR = path.join(__dirname, 'fonts');
+
+// 生成 base64 字体 CSS（用于 Playwright 渲染）
+function generateBase64FontCSS() {
+  const fontWeights = [
+    { weight: 100, file: 'HarmonyOS_SansSC_Thin.ttf' },
+    { weight: 300, file: 'HarmonyOS_SansSC_Light.ttf' },
+    { weight: 400, file: 'HarmonyOS_SansSC_Regular.ttf' },
+    { weight: 500, file: 'HarmonyOS_SansSC_Medium.ttf' },
+    { weight: 600, file: 'HarmonyOS_SansSC_Semibold.ttf' },
+    { weight: 700, file: 'HarmonyOS_SansSC_Bold.ttf' },
+    { weight: 900, file: 'HarmonyOS_SansSC_Black.ttf' },
+  ];
+  
+  let css = '/* HarmonyOS Sans SC - Base64 Embedded */\n';
+  
+  for (const { weight, file } of fontWeights) {
+    const fontPath = path.join(FONTS_DIR, file);
+    if (fs.existsSync(fontPath)) {
+      try {
+        const fontBuffer = fs.readFileSync(fontPath);
+        const base64 = fontBuffer.toString('base64');
+        css += `@font-face { font-family: 'HarmonyOS Sans SC'; src: url(data:font/truetype;base64,${base64}) format('truetype'); font-weight: ${weight}; font-style: normal; }\n`;
+      } catch (e) {
+        console.warn(`警告: 无法读取字体文件 ${file}`);
+      }
+    }
+  }
+  
+  return css;
+}
+
+// 缓存 base64 字体 CSS
+let cachedFontCSS = null;
+function getBase64FontCSS() {
+  if (!cachedFontCSS) {
+    console.log('📝 正在生成 base64 字体 CSS...');
+    cachedFontCSS = generateBase64FontCSS();
+    console.log('✅ Base64 字体 CSS 生成完成');
+  }
+  return cachedFontCSS;
+}
+
 // 交易所配置目录
 const EXCHANGES_DIR = path.join(__dirname, 'exchanges');
 
@@ -603,21 +647,17 @@ function generateRenderHTML(exchangeConfig, data, isProfit, backgroundImagePath,
     })} -->`;
   }
   
+  // 获取 base64 字体 CSS
+  const base64FontCSS = getBase64FontCSS();
+  
   return `
 <!DOCTYPE html>
 <html>
 <head>
   <meta charset="UTF-8">
-  <!-- HarmonyOS Sans SC 字体 - 全字重 -->
-  <link rel="stylesheet" href="https://s1.hdslb.com/bfs/static/jinkela/long/font/regular.css">
   <style>
-    /* HarmonyOS Sans SC 本地字体定义 - 全字重 */
-    @font-face { font-family: 'HarmonyOS Sans SC'; src: url('/fonts/HarmonyOS_SansSC_Thin.ttf') format('truetype'); font-weight: 100; font-display: swap; }
-    @font-face { font-family: 'HarmonyOS Sans SC'; src: url('/fonts/HarmonyOS_SansSC_Light.ttf') format('truetype'); font-weight: 300; font-display: swap; }
-    @font-face { font-family: 'HarmonyOS Sans SC'; src: url('/fonts/HarmonyOS_SansSC_Regular.ttf') format('truetype'); font-weight: 400; font-display: swap; }
-    @font-face { font-family: 'HarmonyOS Sans SC'; src: url('/fonts/HarmonyOS_SansSC_Medium.ttf') format('truetype'); font-weight: 500; font-display: swap; }
-    @font-face { font-family: 'HarmonyOS Sans SC'; src: url('/fonts/HarmonyOS_SansSC_Bold.ttf') format('truetype'); font-weight: 700; font-display: swap; }
-    @font-face { font-family: 'HarmonyOS Sans SC'; src: url('/fonts/HarmonyOS_SansSC_Black.ttf') format('truetype'); font-weight: 900; font-display: swap; }
+    /* HarmonyOS Sans SC - Base64 嵌入字体 */
+    ${base64FontCSS}
     
     ${fontImports}
     
@@ -941,21 +981,17 @@ app.post('/api/render', async (req, res) => {
       }
     }
     
+    // 获取 base64 字体 CSS
+    const base64FontCSS = getBase64FontCSS();
+    
     const html = `
 <!DOCTYPE html>
 <html>
 <head>
   <meta charset="UTF-8">
-  <!-- HarmonyOS Sans SC 字体 - 全字重 -->
-  <link rel="stylesheet" href="https://s1.hdslb.com/bfs/static/jinkela/long/font/regular.css">
   <style>
-    /* HarmonyOS Sans SC 本地字体定义 - 全字重 */
-    @font-face { font-family: 'HarmonyOS Sans SC'; src: url('/fonts/HarmonyOS_SansSC_Thin.ttf') format('truetype'); font-weight: 100; font-display: swap; }
-    @font-face { font-family: 'HarmonyOS Sans SC'; src: url('/fonts/HarmonyOS_SansSC_Light.ttf') format('truetype'); font-weight: 300; font-display: swap; }
-    @font-face { font-family: 'HarmonyOS Sans SC'; src: url('/fonts/HarmonyOS_SansSC_Regular.ttf') format('truetype'); font-weight: 400; font-display: swap; }
-    @font-face { font-family: 'HarmonyOS Sans SC'; src: url('/fonts/HarmonyOS_SansSC_Medium.ttf') format('truetype'); font-weight: 500; font-display: swap; }
-    @font-face { font-family: 'HarmonyOS Sans SC'; src: url('/fonts/HarmonyOS_SansSC_Bold.ttf') format('truetype'); font-weight: 700; font-display: swap; }
-    @font-face { font-family: 'HarmonyOS Sans SC'; src: url('/fonts/HarmonyOS_SansSC_Black.ttf') format('truetype'); font-weight: 900; font-display: swap; }
+    /* HarmonyOS Sans SC - Base64 嵌入字体 */
+    ${base64FontCSS}
     
     ${fontImports}
     * { margin: 0; padding: 0; box-sizing: border-box; }
