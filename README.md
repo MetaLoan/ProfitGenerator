@@ -1,158 +1,179 @@
-# 加密货币晒单收益模拟 API
+# 🚀 加密货币晒单收益模拟 API
 
-## 项目说明
+生成交易所风格的晒单收益图片，支持多交易所、多交易对、自动获取历史价格计算收益率。
 
-支持多交易所、多交易对的晒单图片生成 API，根据历史时间自动获取价格，计算收益率并生成晒单图片。
+## ✨ 功能特性
 
-## 目录结构
+- 📊 **多交易所支持**：Easicoin、LBanken，可扩展更多
+- 💹 **自动价格获取**：从 Binance API 获取历史价格
+- 🎨 **动态方向变色**：根据开仓/平仓方向自动设置颜色
+- 📱 **二维码邀请码**：支持自定义邀请码生成二维码
+- 🌏 **时区转换**：支持不同时区的时间显示
+- 🔤 **HarmonyOS Sans 字体**：支持全 6 种字重
 
+## 📦 快速部署
+
+### 1. 克隆仓库
+
+```bash
+git clone https://github.com/MetaLoan/ProfitGenerator.git
+cd ProfitGenerator
 ```
-project/
-├── server.js                  # API 服务器
-├── exchanges/                 # 交易所配置目录
-│   └── easicoin/              # easicoin 交易所（默认）
-│       ├── config.json        # 交易所配置
-│       ├── model.json         # 模板配置（文字位置、字体等）
-│       └── ethusdt-background.jpg  # ETHUSDT 底图
-├── API文档.md                 # 完整 API 文档
-├── restart.sh                 # 重启服务脚本
-├── restart-ngrok.sh           # 重启 ngrok 脚本
-└── README.md
-```
 
-## 快速开始
-
-### 安装依赖
+### 2. 安装依赖
 
 ```bash
 npm install
 ```
 
-### 启动服务
+### 3. 安装 Playwright 浏览器
+
+```bash
+npx playwright install chromium
+```
+
+### 4. 启动服务
 
 ```bash
 node server.js
-# 或使用脚本
+# 或
 ./start.sh
 ```
 
 服务将在 `http://localhost:3070` 启动
 
-### 测试 API
+### 5. 测试
 
-```bash
-# 获取交易所列表
-curl "http://localhost:3070/api/exchanges"
+打开浏览器访问：
+- API 首页：http://localhost:3070
+- API 测试工具：直接打开 `api-test.html`
+- 模板编辑器：直接打开 `test.html`
 
-# 生成晒单图片（使用默认交易所 easicoin）
-curl "http://localhost:3070/api/generate?tradepair=ETHUSDT&opendate=2025-12-01%2008:30&date=2025-12-03%2012:45&direction=long&lev=125"
+## 📁 目录结构
 
-# 指定交易所
-curl "http://localhost:3070/api/generate?ex=easicoin&tradepair=ETHUSDT&opendate=2025-12-01%2008:30&date=2025-12-03%2012:45&direction=long&lev=125"
+```
+ProfitGenerator/
+├── server.js                     # API 服务主文件
+├── test.html                     # 可视化模板编辑器
+├── api-test.html                 # API 参数测试工具
+├── API文档.md                    # 完整 API 文档
+├── package.json                  # Node.js 依赖
+├── fonts/                        # 字体文件目录
+│   ├── harmonyos-sans.css        # 字体定义文件
+│   └── download-fonts.sh         # 字体下载脚本
+├── exchanges/                    # 交易所配置目录
+│   ├── easicoin/                 # Easicoin 交易所
+│   │   ├── config.json           # 交易所配置
+│   │   ├── model.json            # 模板配置
+│   │   ├── ethusdt-background.jpg
+│   │   └── btcusdt-background.jpg
+│   └── lbanken/                  # LBanken 交易所
+│       ├── config.json
+│       ├── model.json
+│       ├── ethusdt-background.jpg
+│       └── btcusdt-background.jpg
+├── start.sh                      # 启动脚本
+├── stop.sh                       # 停止脚本
+└── restart.sh                    # 重启脚本
 ```
 
-## API 参数说明
+## 🔧 API 使用
+
+### 生成晒单图片
+
+```
+GET /api/generate
+```
 
 | 参数 | 必填 | 说明 |
 |------|------|------|
-| `ex` | 否 | 交易所 ID，默认 `easicoin` |
-| `tradepair` | 是 | 交易对，如 ETHUSDT |
-| `opendate` | 是 | 开仓时间 YYYY-MM-DD HH:mm |
-| `date` | 是 | 显示时间 YYYY-MM-DD HH:mm |
-| `lev` | 否 | 杠杆倍数，默认 10 |
-| `direction` | 否 | long(做多) / short(做空)，默认 long |
+| `ex` | ❌ | 交易所 ID，默认 `easicoin`，可选 `lbanken` |
+| `tradepair` | ✅ | 交易对，如 `ETHUSDT`、`BTCUSDT` |
+| `opendate` | ✅ | 开仓时间 `YYYY-MM-DD HH:mm` |
+| `date` | ✅ | 显示时间 `YYYY-MM-DD HH:mm` |
+| `lev` | ❌ | 杠杆倍数，默认 10 |
+| `direction` | ❌ | `long`(做多) / `short`(做空) |
+| `direction_action` | ❌ | `open`(开仓) / `close`(平仓) |
+| `dynamic_direction_color` | ❌ | `true` 启用动态方向变色 |
+| `timezone` | ❌ | 时区，如 `+8`、`-5`，默认 `+8` |
+| `refcode` | ❌ | 邀请码，用于生成二维码 |
 
-## 返回格式
+### 示例请求
+
+```bash
+# Easicoin 做多
+curl "http://localhost:3070/api/generate?tradepair=ETHUSDT&opendate=2025-12-01%2008:30&date=2025-12-03%2012:45&direction=long&lev=125"
+
+# LBanken 平仓 + 动态变色
+curl "http://localhost:3070/api/generate?ex=lbanken&tradepair=BTCUSDT&opendate=2025-12-01%2010:00&date=2025-12-03%2018:00&direction=short&lev=150&direction_action=close&dynamic_direction_color=true"
+```
+
+### 返回格式
 
 ```json
 {
   "success": true,
-  "message": "ETH/USDT 做多 50x 杠杆，收益率 +475.03%",
-  "exchange": {
-    "id": "easicoin",
-    "name": "Easicoin",
-    "displayName": "Easicoin 交易所"
-  },
-  "tradepair": {
-    "symbol": "ETHUSDT",
-    "base": "ETH",
-    "quote": "USDT",
-    "display": "ETH/USDT"
-  },
+  "message": "ETH/USDT 做多 50x 杠杆，收益率 +454.27%",
+  "exchange": { "id": "easicoin", "displayName": "Easicoin 交易所" },
+  "tradepair": { "symbol": "ETHUSDT", "display": "ETH/USDT" },
   "tradeInfo": {
-    "opendate": "2025-12-02 10:00",
-    "date": "2025-12-03 18:00",
     "direction": "做多",
     "leverage": 50,
-    "entprice": 2795.09,
-    "lastprice": 3060.64,
-    "yield": "+475.03%"
+    "yield": "+454.27%",
+    "ref": "HAJIMI",
+    "qrcode_url": "https://www.easicoinx.com/account/register/?inviteCode=HAJIMI"
   },
   "data": {
     "image": "data:image/png;base64,...",
     "base64": "...",
-    "format": "png",
     "width": 908,
-    "height": 1280,
-    "params": { ... }
+    "height": 1280
   }
 }
 ```
 
-## 添加新交易所
+## 🎨 可选：安装 HarmonyOS Sans 字体
 
-1. 在 `exchanges/` 下创建新目录，如 `exchanges/binance/`
+如需使用 HarmonyOS Sans 字体的全部字重：
 
-2. 添加配置文件 `config.json`：
+1. 访问 https://developer.huawei.com/consumer/cn/design/harmonyos-design/
+2. 下载 HarmonyOS Sans 字体包
+3. 将以下文件复制到 `fonts/` 目录：
+   - `HarmonyOS_Sans_SC_Thin.ttf`
+   - `HarmonyOS_Sans_SC_Light.ttf`
+   - `HarmonyOS_Sans_SC_Regular.ttf`
+   - `HarmonyOS_Sans_SC_Medium.ttf`
+   - `HarmonyOS_Sans_SC_Bold.ttf`
+   - `HarmonyOS_Sans_SC_Black.ttf`
 
-```json
-{
-  "name": "Binance",
-  "displayName": "币安交易所",
-  "priceSource": "binance",
-  "supportedPairs": ["ETHUSDT", "BTCUSDT"],
-  "template": {
-    "width": 908,
-    "height": 1280,
-    "backgroundPattern": "{pair}-background.jpg"
-  }
-}
-```
+## 🔄 添加新交易所
 
-3. 添加模板文件 `model.json`（定义文字位置和样式）
-
+1. 在 `exchanges/` 下创建新目录
+2. 添加 `config.json`（交易所配置）
+3. 添加 `model.json`（模板配置，使用 `test.html` 编辑）
 4. 添加底图文件（如 `ethusdt-background.jpg`）
+5. 重启服务
 
-5. 重启服务：`./restart.sh`
-
-## 添加新交易对
-
-1. 准备底图文件（推荐尺寸：908x1280）
-2. 按照命名规则保存：`{交易对小写}-background.jpg`
-3. 将文件放在对应交易所目录下（如 `exchanges/easicoin/`）
-4. 重启服务即可使用
-
-### 底图命名示例
-
-| 交易对 | 底图文件名 |
-|--------|-----------|
-| ETHUSDT | `ethusdt-background.jpg` |
-| BTCUSDT | `btcusdt-background.jpg` |
-| BNBUSDT | `bnbusdt-background.jpg` |
-
-## 服务管理脚本
+## 📋 服务管理
 
 ```bash
 ./start.sh         # 启动服务
 ./stop.sh          # 停止服务
 ./restart.sh       # 重启服务
-./restart-ngrok.sh # 重启 ngrok（公共访问）
 ```
 
-## 注意事项
+## 🌐 公网访问
 
-1. 底图文件必须存在于对应交易所目录，否则 API 会返回错误
-2. 交易对会自动转换为大写（如 ethusdt → ETHUSDT）
-3. 价格数据来自 Binance API
-4. 如果收益率为负，系统会自动切换多空方向确保收益为正
-5. 如果不传 `ex` 参数，默认使用 `easicoin` 交易所
+使用 ngrok 暴露服务：
+
+```bash
+ngrok http 3070
+```
+
+## 📝 许可证
+
+MIT License
+
+## 🤝 贡献
+
+欢迎提交 Issue 和 Pull Request！
