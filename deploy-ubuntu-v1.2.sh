@@ -194,6 +194,8 @@ StandardError=journal
 SyslogIdentifier=${SERVICE_NAME}
 Environment=NODE_ENV=production
 Environment=PORT=${PORT}
+Environment=MAX_CONCURRENT=3
+Environment=QUEUE_TIMEOUT=30000
 
 # 内存限制和优化
 MemoryMax=1G
@@ -262,6 +264,7 @@ print_result() {
     echo -e "\n${CYAN}🔗 常用接口:${NC}"
     echo -e "   API 首页:        ${BLUE}http://${PUBLIC_IP}/${NC}"
     echo -e "   健康检查:        ${BLUE}http://${PUBLIC_IP}/api/health${NC}"
+    echo -e "   并发统计:        ${BLUE}http://${PUBLIC_IP}/api/stats${NC}"
     echo -e "   交易所列表:      ${BLUE}http://${PUBLIC_IP}/api/exchanges${NC}"
     echo -e "   生成图片示例:    ${BLUE}http://${PUBLIC_IP}/api/generate?tradepair=ETHUSDT&opendate=2025-12-01%2008:00&date=2025-12-03%2012:00&direction=long&lev=100${NC}"
     

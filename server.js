@@ -9,6 +9,88 @@ const QRCode = require('qrcode');
 const app = express();
 const PORT = process.env.PORT || 80;
 
+// ============ 并发控制配置 ============
+const MAX_CONCURRENT = process.env.MAX_CONCURRENT || 3;  // 最大并发数
+const QUEUE_TIMEOUT = process.env.QUEUE_TIMEOUT || 30000; // 排队超时 30 秒
+
+// 并发控制 - 信号量模式
+class ConcurrencyLimiter {
+  constructor(maxConcurrent) {
+    this.maxConcurrent = maxConcurrent;
+    this.currentCount = 0;
+    this.queue = [];
+    this.stats = {
+      totalRequests: 0,
+      completedRequests: 0,
+      failedRequests: 0,
+      queueTimeouts: 0,
+      maxQueueLength: 0
+    };
+  }
+  
+  async acquire(timeout = QUEUE_TIMEOUT) {
+    this.stats.totalRequests++;
+    this.stats.maxQueueLength = Math.max(this.stats.maxQueueLength, this.queue.length);
+    
+    return new Promise((resolve, reject) => {
+      const tryAcquire = () => {
+        if (this.currentCount < this.maxConcurrent) {
+          this.currentCount++;
+          resolve();
+          return true;
+        }
+        return false;
+      };
+      
+      if (tryAcquire()) return;
+      
+      // 加入队列等待
+      const queueItem = { resolve, reject, tryAcquire };
+      this.queue.push(queueItem);
+      
+      // 超时处理
+      const timeoutId = setTimeout(() => {
+        const index = this.queue.indexOf(queueItem);
+        if (index > -1) {
+          this.queue.splice(index, 1);
+          this.stats.queueTimeouts++;
+          reject(new Error(`请求排队超时（${timeout/1000}秒），当前队列长度: ${this.queue.length}`));
+        }
+      }, timeout);
+      
+      queueItem.timeoutId = timeoutId;
+    });
+  }
+  
+  release() {
+    this.currentCount--;
+    this.stats.completedRequests++;
+    
+    // 处理队列中的下一个请求
+    while (this.queue.length > 0 && this.currentCount < this.maxConcurrent) {
+      const next = this.queue.shift();
+      if (next.timeoutId) {
+        clearTimeout(next.timeoutId);
+      }
+      if (next.tryAcquire()) {
+        next.resolve();
+      }
+    }
+  }
+  
+  getStats() {
+    return {
+      ...this.stats,
+      currentConcurrent: this.currentCount,
+      queueLength: this.queue.length,
+      maxConcurrent: this.maxConcurrent
+    };
+  }
+}
+
+const limiter = new ConcurrencyLimiter(MAX_CONCURRENT);
+console.log(`🔄 并发控制已启用: 最大 ${MAX_CONCURRENT} 个并发请求`);
+
 // 静态文件服务 - 字体文件
 app.use('/fonts', express.static(path.join(__dirname, 'fonts')));
 
@@ -786,15 +868,19 @@ async function generateImage(exchangeConfig, data, isProfit, backgroundImagePath
     }
   }
   
+  // 获取并发许可（等待队列）
+  await limiter.acquire();
+  
   let retries = 2;
   let lastError = null;
   
-  while (retries >= 0) {
-    let browser, context, page;
-    
-    try {
-      // 确保浏览器可用（如果已关闭会自动重启）
-      browser = await ensureBrowser();
+  try {
+    while (retries >= 0) {
+      let browser, context, page;
+      
+      try {
+        // 确保浏览器可用（如果已关闭会自动重启）
+        browser = await ensureBrowser();
       
       // 创建新的 context 和 page
       try {
@@ -873,6 +959,10 @@ async function generateImage(exchangeConfig, data, isProfit, backgroundImagePath
   }
   
   throw lastError || new Error('生成图片失败');
+  } finally {
+    // 释放并发许可
+    limiter.release();
+  }
 }
 
 // 解析 JSON body（增大限制以支持 base64 图片）
@@ -1330,6 +1420,7 @@ app.get('/api/health', async (req, res) => {
     await testContext.close();
     
     const exchanges = getAvailableExchanges();
+    const stats = limiter.getStats();
     
     res.json({ 
       status: 'healthy',
@@ -1337,6 +1428,11 @@ app.get('/api/health', async (req, res) => {
       port: PORT,
       exchanges: exchanges.length,
       default_exchange: DEFAULT_EXCHANGE,
+      concurrency: {
+        current: stats.currentConcurrent,
+        max: stats.maxConcurrent,
+        queueLength: stats.queueLength
+      },
       timestamp: new Date().toISOString()
     });
   } catch (error) {
@@ -1347,6 +1443,23 @@ app.get('/api/health', async (req, res) => {
       timestamp: new Date().toISOString()
     });
   }
+});
+
+// API: 并发统计信息
+app.get('/api/stats', (req, res) => {
+  const stats = limiter.getStats();
+  const memUsage = process.memoryUsage();
+  
+  res.json({
+    concurrency: stats,
+    memory: {
+      heapUsed: Math.round(memUsage.heapUsed / 1024 / 1024) + ' MB',
+      heapTotal: Math.round(memUsage.heapTotal / 1024 / 1024) + ' MB',
+      rss: Math.round(memUsage.rss / 1024 / 1024) + ' MB'
+    },
+    uptime: Math.round(process.uptime()) + ' 秒',
+    timestamp: new Date().toISOString()
+  });
 });
 
 // API: 获取当前价格
